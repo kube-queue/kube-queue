@@ -14,12 +14,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package app
+package main
 
 import (
-	options "github.com/kube-queue/kube-queue/cmd/app/options"
+	"flag"
+	"log"
+
+	"github.com/kube-queue/kube-queue/cmd/app/options"
+	app "github.com/kube-queue/kube-queue/cmd/app/server"
 )
 
-func Run(opt *options.ServerOption) error {
+func main() {
+	s := options.NewServerOption()
+	s.AddFlags(flag.CommandLine)
 
+	flag.Parse()
+
+	if err := app.Run(s); err != nil {
+		log.Fatalln(err)
+	}
 }

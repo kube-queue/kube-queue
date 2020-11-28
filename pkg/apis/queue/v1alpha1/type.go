@@ -11,7 +11,7 @@ type QueueUnit struct {
 	meta_v1.TypeMeta   `json:",inline"`
 	meta_v1.ObjectMeta `json:"metadata"`
 	Spec               Spec   `json:"spec"`
-	Status             Status `json:"status, omitempty"`
+	Status             Status `json:"status,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
