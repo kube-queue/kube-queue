@@ -33,6 +33,7 @@ func NewServerOption() *ServerOption {
 }
 
 func (s *ServerOption) AddFlags(fs *flag.FlagSet) {
+	fs.StringVar(&s.Kubeconfig, "kubeconfig", "", "the path of kube-config")
 	fs.StringVar(&s.Namespace, "namespace", v1.NamespaceAll,
 		`The namespace to monitor tfjobs. If unset, it monitors all namespaces cluster-wide.
                 If set, it only monitors tfjobs in the given namespace.`)
