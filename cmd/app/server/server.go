@@ -6,9 +6,10 @@ import (
 	"github.com/kube-queue/kube-queue/cmd/app/options"
 	"github.com/kube-queue/kube-queue/pkg/controller"
 	tfjob "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
-	"github.com/kubeflow/tf-operator/pkg/client/informers/externalversions"
+	tfcontroller "github.com/kubeflow/tf-operator/pkg/controller.v1/tensorflow"
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
@@ -65,15 +66,25 @@ func Run(opt *options.ServerOption) error {
 				klog.Fatalf("Error building %s clientset: %s\n", options.TFJob, err.Error())
 			}
 			jobClients[options.TFJob] = client
-			informer := externalversions.NewSharedInformerFactory(client, opt.ResyncPeriod)
-			jobInformers[options.TFJob] = informer
+			informer := tfcontroller.NewUnstructuredTFJobInformer(cfg, opt.Namespace)
+			jobInformers[options.TFJob] = &informer
 
 		default:
 			klog.Fatalf("Job %s not supported\n", jobType)
 		}
 	}
 
-	qController, err := controller.NewController(kubeClient, jobClients, jobInformers, stopCh)
+	// get all resource quota (request) from all namespaces
+	var nsList []string
+	res, err := kubeClient.CoreV1().Namespaces().List(metav1.ListOptions{})
+	if err != nil {
+		return err
+	}
+	for _, ns := range res.Items {
+		nsList = append(nsList, ns.Name)
+	}
+
+	qController, err := controller.NewController(kubeClient, jobClients, jobInformers, nsList, stopCh)
 	if err != nil {
 		klog.Fatalln("Error building controller\n")
 	}

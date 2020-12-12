@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -23,10 +24,19 @@ type QueueUnitList struct {
 }
 
 type Spec struct {
-	PriorityClassName string `json:"priorityclassname"`
-	Queue             string `json:"queue"`
+	PriorityClassName string              `json:"priorityclassname"`
+	Queue             string              `json:"queue"`
+	Resource          corev1.ResourceList `json:"resource"`
 }
 
+type JobPhase string
+
+const (
+	JobEnqueued JobPhase = "Enqueued"
+	JobDequeued JobPhase = "Dequeued"
+)
+
 type Status struct {
-	Message string `json:"message,omitempty"`
+	Phase   JobPhase `json:"phase"`
+	Message string   `json:"message,omitempty"`
 }
