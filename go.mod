@@ -3,22 +3,18 @@ module github.com/kube-queue/kube-queue
 go 1.14
 
 require (
-	github.com/golang/groupcache v0.0.0-20190129154638-5b532d6fd5ef // indirect
-	github.com/golang/protobuf v1.3.2 // indirect
 	github.com/google/go-cmp v0.4.1 // indirect
 	github.com/googleapis/gnostic v0.2.0 // indirect
 	github.com/imdario/mergo v0.3.7 // indirect
-	github.com/json-iterator/go v1.1.9 // indirect
 	github.com/kubeflow/tf-operator v0.5.3
+	github.com/kubernetes-sigs/kube-batch v0.5.0 // indirect
 	github.com/onsi/ginkgo v1.10.1 // indirect
 	github.com/onsi/gomega v1.7.0 // indirect
-	github.com/sirupsen/logrus v1.4.2
-	github.com/stretchr/testify v1.4.0 // indirect
-	golang.org/x/sys v0.0.0-20200122134326-e047566fdf82 // indirect
-	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
+	github.com/prometheus/client_golang v1.9.0 // indirect
+	github.com/sirupsen/logrus v1.6.0
 	k8s.io/api v0.16.9
 	k8s.io/apimachinery v0.16.9
-	k8s.io/client-go v0.16.9
+	k8s.io/client-go v10.0.0+incompatible
 	k8s.io/code-generator v0.16.9
 	k8s.io/klog/v2 v2.4.0
 	k8s.io/kube-openapi v0.0.0-20190816220812-743ec37842bf
