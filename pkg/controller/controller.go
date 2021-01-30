@@ -7,7 +7,7 @@ import (
 
 	"github.com/kube-queue/kube-queue/cmd/app/options"
 	queue "github.com/kube-queue/kube-queue/pkg/apis/queue/v1alpha1"
-	queuejob "github.com/kube-queue/kube-queue/pkg/job"
+	internalcache "github.com/kube-queue/kube-queue/pkg/cache"
 	v1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
 	tfjobClientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
 	tfjobInformerv1 "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions/tensorflow/v1"
@@ -15,7 +15,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	metav1unstructured "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	utilrntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
@@ -25,12 +24,6 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/klog/v2"
-)
-
-const controllerAgentName = "queue-controller"
-
-const (
-	annotationQueue = "kube-queue"
 )
 
 type Controller struct {
@@ -46,7 +39,7 @@ type Controller struct {
 
 	// namespacedJobSets maps key (namespace) to the Queue Unit
 	// it performs as an internal cache for resource reservation
-	namespacedJobSet map[string][]queue.QueueUnit
+	namespacedJobSet internalcache.JobCacheInterface
 
 	// recorder is an event recorder for recording Event resources to the
 	// Kubernetes API.
@@ -86,7 +79,7 @@ func NewController(kubeclientset kubernetes.Interface,
 		jobInformers:  jobInformers,
 		WorkQueue: workqueue.NewNamedRateLimitingQueue(
 			workqueue.NewItemFastSlowRateLimiter(2*time.Second, 1*time.Minute, 50), "priority"),
-		namespacedJobSet: map[string][]queue.QueueUnit{},
+		namespacedJobSet: internalcache.MakeInternalCache(),
 		recorder:         recorder,
 	}
 
@@ -110,62 +103,6 @@ func NewController(kubeclientset kubernetes.Interface,
 	return controller, nil
 }
 
-func (c *Controller) register(obj metav1.Object, res corev1.ResourceList, phase queue.JobPhase) {
-	namespace := obj.GetNamespace()
-	qu := queue.QueueUnit{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      obj.GetName(),
-			Namespace: obj.GetNamespace(),
-			// Because we only use QueueUnit internally, we set the UID of the QueueUnit identical to the Job
-			UID: obj.GetUID(),
-		},
-		Spec: queue.Spec{
-			PriorityClassName: "high",
-			Queue:             "default",
-			Resource:          res,
-		},
-		Status: queue.Status{
-			Phase: phase,
-		},
-	}
-
-	q, _ := c.namespacedJobSet[namespace]
-	if q == nil {
-		q = append(q, qu)
-	} else {
-		registered := false
-		for idx, item := range q {
-			if item.UID == qu.UID {
-				q[idx] = qu
-				registered = true
-			}
-		}
-		if !registered {
-			q = append(q, qu)
-		}
-	}
-	c.namespacedJobSet[namespace] = q
-}
-
-func (c *Controller) unregister(obj metav1.Object) {
-	uid := obj.GetUID()
-	namespace := obj.GetNamespace()
-
-	q, nsExist := c.namespacedJobSet[namespace]
-	if !nsExist {
-		return
-	}
-
-	if q != nil {
-		for idx, qu := range q {
-			if qu.UID == uid {
-				q = append(q[:idx], q[idx+1:]...)
-			}
-		}
-		c.namespacedJobSet[namespace] = q
-	}
-}
-
 func (c *Controller) enqueueItem(obj interface{}) {
 	metaObj, resource, err := extractFromUnstructured(obj)
 	if err != nil {
@@ -180,13 +117,24 @@ func (c *Controller) enqueueItem(obj interface{}) {
 		}
 	}
 
-	c.register(metaObj, resource, jph)
+	qu := queue.QueueUnit{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      metaObj.GetName(),
+			Namespace: metaObj.GetNamespace(),
+			UID:       metaObj.GetUID(),
+		},
+		Spec: queue.Spec{
+			JobType:  options.TFJob,
+			Resource: resource,
+		},
+		Status: queue.Status{
+			Phase: jph,
+		},
+	}
 
-	key := queuejob.GenericJob{
-		Name:      metaObj.GetName(),
-		Namespace: metaObj.GetNamespace(),
-		Kind:      options.TFJob,
-	}.String()
+	c.namespacedJobSet.AddOrUpdate(qu)
+
+	key := qu.Serialize()
 
 	if jph == queue.JobEnqueued {
 		c.WorkQueue.AddRateLimited(key)
@@ -199,13 +147,9 @@ func (c *Controller) dequeueItem(obj interface{}) {
 		return
 	}
 
-	c.unregister(metaObj)
+	c.namespacedJobSet.Remove(metaObj.GetNamespace(), metaObj.GetUID())
 
-	key := queuejob.GenericJob{
-		Name:      metaObj.GetName(),
-		Namespace: metaObj.GetNamespace(),
-		Kind:      options.TFJob,
-	}.String()
+	key := queue.MakeSimpleQueueUnit(metaObj.GetName(), metaObj.GetNamespace(), options.TFJob).Serialize()
 
 	c.WorkQueue.Forget(key)
 }
@@ -280,11 +224,11 @@ func (c *Controller) processNextWorkItem() bool {
 func (c *Controller) syncHandler(key string) (bool, error) {
 	klog.Infof("Processing key: %s", key)
 
-	metaJob, err := queuejob.ConvertToGenericJob(key)
+	metaJob, err := queue.Deserialize(key)
 	if err != nil {
 		return false, err
 	}
-	jobType := metaJob.Kind
+	jobType := metaJob.Spec.JobType
 	namespace := metaJob.Namespace
 	jobName := metaJob.Name
 
@@ -307,7 +251,7 @@ func (c *Controller) syncHandler(key string) (bool, error) {
 		}
 
 		resourceRequest := CalResourceRequestForTFJob(j)
-		reservedQuota := c.getReserved(namespace)
+		reservedQuota := c.namespacedJobSet.ReservedResource(namespace)
 
 		// If there are multiple resource quota within the namespace, we accumulate all of them
 		// TODO: Replace List from kubeclientset to Lister
@@ -337,7 +281,7 @@ func (c *Controller) syncHandler(key string) (bool, error) {
 				return false, err
 			}
 			// update reserved
-			c.updateJobPhase(namespace, j.UID, queue.JobDequeued)
+			c.namespacedJobSet.UpdatePhase(namespace, j.UID, queue.JobDequeued)
 			klog.Infof("job %s cleared", key)
 		} else {
 			// If there is not enough resource left for the job, return non-error and not to forget this job
@@ -346,42 +290,6 @@ func (c *Controller) syncHandler(key string) (bool, error) {
 	}
 
 	return true, nil
-}
-
-func (c *Controller) getReserved(namespace string) corev1.ResourceList {
-	q, exist := c.namespacedJobSet[namespace]
-	if !exist {
-		return nil
-	}
-
-	reserved := corev1.ResourceList{}
-	for _, qu := range q {
-		if qu.Status.Phase == queue.JobDequeued {
-			for resName, resVal := range qu.Spec.Resource {
-				newVal := resVal.DeepCopy()
-				oldVal, resExist := reserved[resName]
-				if resExist {
-					newVal.Add(oldVal)
-				}
-				reserved[resName] = newVal
-			}
-		}
-	}
-
-	return reserved
-}
-
-func (c *Controller) updateJobPhase(namespace string, uid types.UID, newPhase queue.JobPhase) {
-	q, exist := c.namespacedJobSet[namespace]
-	if !exist {
-		return
-	}
-
-	for idx, qu := range q {
-		if qu.UID == uid {
-			q[idx].Status.Phase = newPhase
-		}
-	}
 }
 
 func CalResourceRequestForTFJob(j *v1.TFJob) corev1.ResourceList {
