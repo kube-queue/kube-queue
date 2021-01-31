@@ -3,6 +3,7 @@ module github.com/kube-queue/kube-queue
 go 1.14
 
 require (
+	github.com/gogo/protobuf v1.2.2-0.20190723190241-65acae22fc9d
 	github.com/google/go-cmp v0.4.1 // indirect
 	github.com/googleapis/gnostic v0.2.0 // indirect
 	github.com/imdario/mergo v0.3.7 // indirect
@@ -26,13 +27,13 @@ replace (
 	k8s.io/api => k8s.io/api v0.16.9
 	k8s.io/api v0.16.9 => k8s.io/api v0.16.9
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.16.9
-	k8s.io/apimachinery => k8s.io/apimachinery v0.16.10-beta.0
+	k8s.io/apimachinery => k8s.io/apimachinery v0.16.9
 	k8s.io/apiserver => k8s.io/apiserver v0.16.9
 	k8s.io/cli-runtime => k8s.io/cli-runtime v0.16.9
 	k8s.io/client-go => k8s.io/client-go v0.16.9
 	k8s.io/cloud-provider => k8s.io/cloud-provider v0.16.9
 	k8s.io/cluster-bootstrap => k8s.io/cluster-bootstrap v0.16.9
-	k8s.io/code-generator => k8s.io/code-generator v0.16.10-beta.0
+	k8s.io/code-generator => k8s.io/code-generator v0.16.9
 	k8s.io/component-base => k8s.io/component-base v0.16.9
 	k8s.io/cri-api => k8s.io/cri-api v0.16.10-beta.0
 	k8s.io/csi-translation-lib => k8s.io/csi-translation-lib v0.16.9
