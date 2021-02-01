@@ -25,3 +25,16 @@ APIMACHINERY_PKGS=(
     --apimachinery-packages=$(IFS=, ; echo "${APIMACHINERY_PKGS[*]}") \
     --proto-import=/usr/local/include/google/protobuf/ \
     -o="${HOME}"/go/src/
+
+
+protoc -I "${HOME}"/go/src \
+      -I "${PROJECT_ROOT}"/vendor \
+      -I pkg/comm/controller/pb \
+      pkg/comm/controller/pb/controller.proto \
+      --go_out=plugins=grpc:pkg/comm/controller/pb/
+
+protoc -I "${HOME}"/go/src \
+      -I "${PROJECT_ROOT}"/vendor \
+      -I pkg/comm/bundle/pb \
+      pkg/comm/bundle/pb/bundle.proto \
+      --go_out=plugins=grpc:pkg/comm/bundle/pb/

@@ -2,6 +2,7 @@ package controller
 
 import (
 	"fmt"
+	"k8s.io/apimachinery/pkg/types"
 	"strings"
 	"time"
 
@@ -139,6 +140,16 @@ func (c *Controller) enqueueItem(obj interface{}) {
 	}
 }
 
+func (c *Controller) EnqueueItem(qu queue.QueueUnit) {
+	c.namespacedJobSet.AddOrUpdate(qu)
+
+	key := qu.Serialize()
+
+	if qu.Status.Phase == queue.JobEnqueued {
+		c.WorkQueue.AddRateLimited(key)
+	}
+}
+
 func (c *Controller) dequeueItem(obj interface{}) {
 	metaObj, _, err := extractFromUnstructured(obj)
 	if err != nil {
@@ -148,6 +159,14 @@ func (c *Controller) dequeueItem(obj interface{}) {
 	c.namespacedJobSet.Remove(metaObj.GetNamespace(), metaObj.GetUID())
 
 	key := queue.MakeSimpleQueueUnit(metaObj.GetName(), metaObj.GetNamespace(), options.TFJob).Serialize()
+
+	c.WorkQueue.Forget(key)
+}
+
+func (c *Controller) DequeueItem(namespace string, name string, uid string, jobType string) {
+	c.namespacedJobSet.Remove(namespace, types.UID(uid))
+
+	key := queue.MakeSimpleQueueUnit(name, namespace, jobType).Serialize()
 
 	c.WorkQueue.Forget(key)
 }

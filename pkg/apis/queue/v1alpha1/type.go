@@ -25,6 +25,7 @@ type QueueUnitList struct {
 
 const DefaultPriority int32 = 999
 const DefaultQueueName string = "default"
+const AnnotationQueue = "kube-queue"
 
 type Spec struct {
 	JobType  string              `json:"type" protobuf:"bytes,1,name=jobType"`

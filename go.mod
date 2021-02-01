@@ -3,7 +3,6 @@ module github.com/kube-queue/kube-queue
 go 1.14
 
 require (
-	github.com/gogo/protobuf v1.2.2-0.20190723190241-65acae22fc9d
 	github.com/google/go-cmp v0.4.1 // indirect
 	github.com/googleapis/gnostic v0.2.0 // indirect
 	github.com/imdario/mergo v0.3.7 // indirect
@@ -13,6 +12,9 @@ require (
 	github.com/onsi/gomega v1.7.0 // indirect
 	github.com/prometheus/client_golang v1.9.0 // indirect
 	github.com/sirupsen/logrus v1.6.0
+	golang.org/x/net v0.0.0-20200625001655-4c5254603344
+	google.golang.org/grpc v1.26.0
+	google.golang.org/protobuf v1.23.0
 	k8s.io/api v0.16.9
 	k8s.io/apimachinery v0.16.9
 	k8s.io/client-go v10.0.0+incompatible
@@ -24,6 +26,7 @@ require (
 )
 
 replace (
+	google.golang.org/grpc => google.golang.org/grpc v1.27.0
 	k8s.io/api => k8s.io/api v0.16.9
 	k8s.io/api v0.16.9 => k8s.io/api v0.16.9
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.16.9

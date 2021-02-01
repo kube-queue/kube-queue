@@ -8,6 +8,7 @@ package github.com.kube_queue.kube_queue.pkg.apis.queue.v1alpha1;
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "k8s.io/api/core/v1/generated.proto";
 import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
+import "k8s.io/apimachinery/pkg/api/resource/generated.proto";
 
 // Package-wide variables from generator "generated".
 option (gogoproto.marshaler_all) = true;
@@ -42,7 +43,7 @@ message Spec {
 
   optional string queue = 3 [(gogoproto.customname) = "Queue", (gogoproto.nullable) = false];
 
-  map<string, k8s.io.api.core.v1.Quantity> resource = 4 [(gogoproto.castkey) = "k8s.io/api/core/v1.ResourceName", (gogoproto.casttype) = "k8s.io/api/core/v1.ResourceList", (gogoproto.customname) = "Resource", (gogoproto.nullable) = false];
+  map<string, k8s.io.apimachinery.pkg.api.resource.Quantity> resource = 4 [(gogoproto.castkey) = "k8s.io/api/core/v1.ResourceName", (gogoproto.casttype) = "k8s.io/api/core/v1.ResourceList", (gogoproto.customname) = "Resource", (gogoproto.nullable) = false];
 }
 
 message Status {

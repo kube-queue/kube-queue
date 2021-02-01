@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package pb;
+
+import "github.com/kube-queue/kube-queue/pkg/apis/queue/v1alpha1/generated.proto";
+
+message AddRequest {
+  github.com.kube_queue.kube_queue.pkg.apis.queue.v1alpha1.QueueUnit queueUnit = 1;
+}
+
+message AddResponse {
+  string message = 1;
+}
+
+message DeleteRequest {
+  string name = 1;
+  string namespace = 2;
+  string uid = 3;
+  string type = 4;
+}
+
+message DeleteResponse {
+  string message = 1;
+}
+
+service Queue {
+  rpc AddOrUpdate (AddRequest) returns (AddResponse) {}
+  rpc Delete (DeleteRequest) returns (DeleteResponse) {}
+}
