@@ -3,7 +3,9 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-PROJECT_ROOT=$(cd $(dirname ${BASH_SOURCE})/..; pwd)
+# shellcheck disable=SC2128
+# shellcheck disable=SC2046
+PROJECT_ROOT=$(cd $(dirname "${BASH_SOURCE}")/..; pwd)
 
 export GO111MODULE=off
 
@@ -27,14 +29,21 @@ APIMACHINERY_PKGS=(
     -o="${HOME}"/go/src/
 
 
+echo "Generating Go files from controller.proto"
 protoc -I "${HOME}"/go/src \
       -I "${PROJECT_ROOT}"/vendor \
-      -I pkg/comm/controller/pb \
-      pkg/comm/controller/pb/controller.proto \
-      --go_out=plugins=grpc:pkg/comm/controller/pb/
+      -I pkg/comm/queue/pb \
+      pkg/comm/queue/pb/queue.proto \
+      --go_out=plugins=grpc:pkg/comm/queue/pb/
 
 protoc -I "${HOME}"/go/src \
       -I "${PROJECT_ROOT}"/vendor \
-      -I pkg/comm/bundle/pb \
-      pkg/comm/bundle/pb/bundle.proto \
-      --go_out=plugins=grpc:pkg/comm/bundle/pb/
+      -I pkg/comm/extension/pb \
+      pkg/comm/extension/pb/extension.proto \
+      --go_out=plugins=grpc:pkg/comm/extension/pb/
+
+protoc -I "${HOME}"/go/src \
+      -I "${PROJECT_ROOT}"/vendor \
+      -I pkg/comm/permission/pb \
+      pkg/comm/permission/pb/permission.proto \
+      --go_out=plugins=grpc:pkg/comm/permission/pb/

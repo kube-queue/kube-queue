@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package pb;
+
+import "github.com/kube-queue/kube-queue/pkg/apis/queue/v1alpha1/generated.proto";
+
+enum PermissionFeedback {
+  PROVE = 0;
+  DENIED = 1;
+}
+
+enum ActionResult {
+  SUCCESS = 0;
+  FAILED = 1;
+}
+
+message PermissionRequest {
+  github.com.kube_queue.kube_queue.pkg.apis.queue.v1alpha1.QueueUnit queueUnit = 1;
+}
+
+message PermissionResponse {
+  PermissionFeedback feedback = 1;
+}
+
+message ChangeStatusRequest {
+  github.com.kube_queue.kube_queue.pkg.apis.queue.v1alpha1.QueueUnit queueUnit = 1;
+}
+
+message ChangeStatusResponse {
+  ActionResult result = 1;
+}
+
+
+service Permission {
+  rpc DemandPermission (PermissionRequest) returns (PermissionResponse) {}
+  rpc NotifyJobDeleted (ChangeStatusRequest) returns (ChangeStatusResponse) {}
+}

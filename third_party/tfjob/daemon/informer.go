@@ -1,7 +1,7 @@
 package daemon
 
 import (
-	communicate "github.com/kube-queue/kube-queue/pkg/comm/controller"
+	queue "github.com/kube-queue/kube-queue/pkg/comm/queue"
 	tfjobInformerv1 "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions/tensorflow/v1"
 	tfcontroller "github.com/kubeflow/tf-operator/pkg/controller.v1/tensorflow"
 	"k8s.io/client-go/rest"
@@ -9,7 +9,7 @@ import (
 )
 
 type Daemon struct {
-	client communicate.ControllerClientInterface
+	client queue.QueueClientInterface
 	informer tfjobInformerv1.TFJobInformer
 }
 
