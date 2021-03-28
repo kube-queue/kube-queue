@@ -4,7 +4,5 @@ metadata:
   name: default
 spec:
   hard:
-    limits.cpu: "4"
-    limits.memory: 4Gi
-    requests.cpu: "4"
-    requests.memory: 4Gi
+    cpu: "4"
+    memory: 4Gi

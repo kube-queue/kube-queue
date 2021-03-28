@@ -14,14 +14,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package queue
+package main
 
 import (
-	v1alpha1 "github.com/kube-queue/kube-queue/pkg/apis/queue/v1alpha1"
+	"flag"
+	"log"
+
+	"github.com/kube-queue/kube-queue/cmd/queue-controller/app/options"
+	app "github.com/kube-queue/kube-queue/cmd/queue-controller/app/server"
 )
 
-type Queue interface {
-	Add(pod *v1alpha1.QueueUnit) error
-	Update(pod *v1alpha1.QueueUnit) error
-	Delete(pod *v1alpha1.QueueUnit) error
+func main() {
+	s := options.NewServerOption()
+	s.AddFlags(flag.CommandLine)
+
+	flag.Parse()
+
+	if err := app.Run(s); err != nil {
+		log.Fatalln(err)
+	}
 }

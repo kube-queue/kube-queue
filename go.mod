@@ -12,10 +12,15 @@ require (
 	github.com/onsi/gomega v1.7.0 // indirect
 	github.com/prometheus/client_golang v1.9.0 // indirect
 	github.com/sirupsen/logrus v1.6.0
+	golang.org/x/net v0.0.0-20200625001655-4c5254603344
+	google.golang.org/grpc v1.26.0
+	google.golang.org/protobuf v1.23.0
+	gopkg.in/yaml.v2 v2.3.0
 	k8s.io/api v0.16.9
 	k8s.io/apimachinery v0.16.9
 	k8s.io/client-go v10.0.0+incompatible
 	k8s.io/code-generator v0.16.9
+	k8s.io/klog v1.0.0
 	k8s.io/klog/v2 v2.4.0
 	k8s.io/kube-openapi v0.0.0-20190816220812-743ec37842bf
 	k8s.io/sample-controller v0.0.0-00010101000000-000000000000
@@ -23,16 +28,17 @@ require (
 )
 
 replace (
+	google.golang.org/grpc => google.golang.org/grpc v1.27.0
 	k8s.io/api => k8s.io/api v0.16.9
 	k8s.io/api v0.16.9 => k8s.io/api v0.16.9
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.16.9
-	k8s.io/apimachinery => k8s.io/apimachinery v0.16.10-beta.0
+	k8s.io/apimachinery => k8s.io/apimachinery v0.16.9
 	k8s.io/apiserver => k8s.io/apiserver v0.16.9
 	k8s.io/cli-runtime => k8s.io/cli-runtime v0.16.9
 	k8s.io/client-go => k8s.io/client-go v0.16.9
 	k8s.io/cloud-provider => k8s.io/cloud-provider v0.16.9
 	k8s.io/cluster-bootstrap => k8s.io/cluster-bootstrap v0.16.9
-	k8s.io/code-generator => k8s.io/code-generator v0.16.10-beta.0
+	k8s.io/code-generator => k8s.io/code-generator v0.16.9
 	k8s.io/component-base => k8s.io/component-base v0.16.9
 	k8s.io/cri-api => k8s.io/cri-api v0.16.10-beta.0
 	k8s.io/csi-translation-lib => k8s.io/csi-translation-lib v0.16.9

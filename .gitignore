@@ -3,6 +3,7 @@
 /_output/
 /_artifacts/
 /build/kube-scheduler
+/dist/
 
 # used for the code generators only
 /vendor/
