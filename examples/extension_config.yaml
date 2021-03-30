@@ -1,0 +1,3 @@
+tfjob: "unix:///Users/lucas/go/src/github.com/kube-queue/kube-queue/examples/tf.sock"
+
+
