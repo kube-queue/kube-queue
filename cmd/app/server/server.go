@@ -7,7 +7,7 @@ import (
 
 	communicate "github.com/kube-queue/kube-queue/pkg/comm/queue"
 
-	"github.com/kube-queue/kube-queue/cmd/queue-controller/app/options"
+	"github.com/kube-queue/kube-queue/cmd/app/options"
 	extension "github.com/kube-queue/kube-queue/pkg/comm/extension"
 	"github.com/kube-queue/kube-queue/pkg/controller"
 	"github.com/kube-queue/kube-queue/pkg/permission"
@@ -72,7 +72,7 @@ func Run(opt *options.ServerOption) error {
 
 	kubeInformerFactory.Start(stopCh)
 
-	// Setup the GRPC Server
+	// Setup the Server
 	server := communicate.MakeQueueServer(qController)
 
 	go func() {

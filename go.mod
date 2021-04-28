@@ -3,18 +3,22 @@ module github.com/kube-queue/kube-queue
 go 1.14
 
 require (
+	github.com/golang/groupcache v0.0.0-20190702054246-869f871628b6 // indirect
+	github.com/golang/protobuf v1.4.3 // indirect
 	github.com/google/go-cmp v0.4.1 // indirect
 	github.com/googleapis/gnostic v0.2.0 // indirect
 	github.com/imdario/mergo v0.3.7 // indirect
+	github.com/json-iterator/go v1.1.10 // indirect
 	github.com/kubeflow/tf-operator v0.5.3
-	github.com/kubernetes-sigs/kube-batch v0.5.0 // indirect
 	github.com/onsi/ginkgo v1.10.1 // indirect
 	github.com/onsi/gomega v1.7.0 // indirect
-	github.com/prometheus/client_golang v1.9.0 // indirect
 	github.com/sirupsen/logrus v1.6.0
+	github.com/stretchr/testify v1.4.0 // indirect
 	golang.org/x/net v0.0.0-20200625001655-4c5254603344
-	google.golang.org/grpc v1.26.0
-	google.golang.org/protobuf v1.23.0
+	golang.org/x/sys v0.0.0-20201214210602-f9fddec55a1e // indirect
+	golang.org/x/time v0.0.0-20191024005414-555d28b269f0 // indirect
+	golang.org/x/tools v0.0.0-20200103221440-774c71fcf114 // indirect
+	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 	gopkg.in/yaml.v2 v2.3.0
 	k8s.io/api v0.16.9
 	k8s.io/apimachinery v0.16.9
@@ -28,7 +32,6 @@ require (
 )
 
 replace (
-	google.golang.org/grpc => google.golang.org/grpc v1.27.0
 	k8s.io/api => k8s.io/api v0.16.9
 	k8s.io/api v0.16.9 => k8s.io/api v0.16.9
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.16.9

@@ -20,8 +20,8 @@ import (
 	"flag"
 	"log"
 
-	"github.com/kube-queue/kube-queue/cmd/queue-controller/app/options"
-	app "github.com/kube-queue/kube-queue/cmd/queue-controller/app/server"
+	"github.com/kube-queue/kube-queue/cmd/app/options"
+	app "github.com/kube-queue/kube-queue/cmd/app/server"
 )
 
 func main() {
