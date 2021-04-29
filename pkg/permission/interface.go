@@ -10,5 +10,5 @@ type CounterInterface interface {
 	IfPermissionGranted(namespace string, uid types.UID) bool
 	RegisterJob(name string, namespace string, uid types.UID, res corev1.ResourceList, phase queue.JobPhase)
 	UnregisterJob(namespace string, uid types.UID)
-	MarkJobReleased(namespace string, uid types.UID)
+	MarkJobDequeued(namespace string, uid types.UID)
 }
