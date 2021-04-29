@@ -90,7 +90,7 @@ func (rpc *ResourcePermissionCounter) UnregisterJob(namespace string, uid types.
 	}
 }
 
-func (rpc *ResourcePermissionCounter) MarkJobReleased(namespace string, uid types.UID) {
+func (rpc *ResourcePermissionCounter) MarkJobDequeued(namespace string, uid types.UID) {
 	q, exist := rpc.jobSetByNamespace[namespace]
 	if !exist {
 		return

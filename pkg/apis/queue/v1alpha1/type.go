@@ -39,6 +39,7 @@ type JobPhase string
 const (
 	JobEnqueued JobPhase = "Enqueued"
 	JobDequeued JobPhase = "Dequeued"
+	JobReleased JobPhase = "Released"
 )
 
 type Status struct {

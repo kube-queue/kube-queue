@@ -27,7 +27,7 @@ func (cs *QueueServer) AddOrUpdate(ctx context.Context, in *queue.QueueUnit) err
 }
 
 func (cs *QueueServer) Delete(ctx context.Context, in *queue.QueueUnit) error {
-	return cs.queueController.DequeueItem(in.Namespace, in.Name, string(in.UID), in.Spec.JobType)
+	return cs.queueController.ReleaseItem(in)
 }
 
 func StartServer(csi QueueServerInterface, unParsedAddr string) error {

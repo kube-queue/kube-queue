@@ -38,7 +38,7 @@ func MakeExtensionClient(addr string) (ExtensionClientInterface, error) {
 	}, nil
 }
 
-func (c *Client) ReleaseJob(qu *v1alpha1.QueueUnit) error {
+func (c *Client) DequeueJob(qu *v1alpha1.QueueUnit) error {
 	data, err := json.Marshal(qu)
 	if err != nil {
 		return err

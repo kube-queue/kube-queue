@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	"k8s.io/apimachinery/pkg/types"
-
 	queue "github.com/kube-queue/kube-queue/pkg/apis/queue/v1alpha1"
 	extension "github.com/kube-queue/kube-queue/pkg/comm/extension"
 	"github.com/kube-queue/kube-queue/pkg/permission"
@@ -64,6 +62,7 @@ func NewController(
 	return controller, nil
 }
 
+// EnqueueItem insert QueueUnit into worker queue
 func (c *Controller) EnqueueItem(qu *queue.QueueUnit) {
 	phase := queue.JobEnqueued
 	if qu.Status.Phase != "" {
@@ -77,11 +76,30 @@ func (c *Controller) EnqueueItem(qu *queue.QueueUnit) {
 	}
 }
 
-func (c *Controller) DequeueItem(namespace string, name string, uid string, jobType string) error {
-	qu := queue.MakeSimpleQueueUnit(name, namespace, uid, jobType)
+// DequeueItem removes QueueUnit from work queue and marks corresponding job as Dequeued
+func (c *Controller) DequeueItem(qu *queue.QueueUnit) error {
+	key := qu.Serialize()
+	extClient, exist := c.ExtensionClients[qu.Spec.JobType]
+	if !exist {
+		return fmt.Errorf("cannot find the corresponding extension client for %s %s", qu.Spec.JobType, key)
+	}
+
+	err := extClient.DequeueJob(qu)
+	if err != nil {
+		return err
+	}
+
+	c.PC.MarkJobDequeued(qu.Namespace, qu.UID)
+
+	return nil
+}
+
+
+// ReleaseItem is called to release the resource when job is removed
+func (c *Controller) ReleaseItem(qu *queue.QueueUnit) error {
 	key := qu.Serialize()
 
-	c.PC.UnregisterJob(namespace, types.UID(uid))
+	c.PC.UnregisterJob(qu.Namespace, qu.UID)
 
 	c.WorkQueue.Forget(key)
 
@@ -163,13 +181,7 @@ func (c *Controller) syncHandler(key string) (bool, error) {
 		return false, fmt.Errorf("permission denied for job %s", key)
 	}
 
-	jobType := qu.Spec.JobType
-	extClient, exist := c.ExtensionClients[jobType]
-	if !exist {
-		return false, fmt.Errorf("cannot find the corresponding extension client for %s %s", jobType, key)
-	}
-
-	err = extClient.ReleaseJob(qu)
+	err = c.DequeueItem(qu)
 	if err != nil {
 		return false, err
 	}
