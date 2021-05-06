@@ -29,6 +29,9 @@ type Controller struct {
 	// Extension Client Map
 	ExtensionClients map[string]extension.ExtensionClientInterface
 
+	// extCh is an ExtensionClients worker channel for calling RPC asynchronously
+	extCh chan *queue.QueueUnit
+
 	// recorder is an event recorder for recording Event resources to the
 	// Kubernetes API.
 	recorder record.EventRecorder
@@ -55,6 +58,7 @@ func NewController(
 		PC:               pc,
 		ExtensionClients: extClients,
 		recorder:         recorder,
+		extCh: make(chan *queue.QueueUnit),
 	}
 
 	klog.Info("Setting up event handlers")
@@ -77,21 +81,8 @@ func (c *Controller) EnqueueItem(qu *queue.QueueUnit) {
 }
 
 // DequeueItem removes QueueUnit from work queue and marks corresponding job as Dequeued
-func (c *Controller) DequeueItem(qu *queue.QueueUnit) error {
-	key := qu.Serialize()
-	extClient, exist := c.ExtensionClients[qu.Spec.JobType]
-	if !exist {
-		return fmt.Errorf("cannot find the corresponding extension client for %s %s", qu.Spec.JobType, key)
-	}
-
-	err := extClient.DequeueJob(qu)
-	if err != nil {
-		return err
-	}
-
-	c.PC.MarkJobDequeued(qu.Namespace, qu.UID)
-
-	return nil
+func (c *Controller) DequeueItem(qu *queue.QueueUnit) {
+	c.extCh <- qu
 }
 
 
@@ -99,9 +90,10 @@ func (c *Controller) DequeueItem(qu *queue.QueueUnit) error {
 func (c *Controller) ReleaseItem(qu *queue.QueueUnit) error {
 	key := qu.Serialize()
 
-	c.PC.UnregisterJob(qu.Namespace, qu.UID)
-
 	c.WorkQueue.Forget(key)
+	c.WorkQueue.Done(key)
+
+	c.PC.UnregisterJob(qu.Namespace, qu.UID)
 
 	return nil
 }
@@ -109,6 +101,7 @@ func (c *Controller) ReleaseItem(qu *queue.QueueUnit) error {
 func (c *Controller) Run(threadiness int, stopCh <-chan struct{}) error {
 	defer utilrntime.HandleCrash()
 	defer c.WorkQueue.ShutDown()
+	defer close(c.extCh)
 
 	// Start the informer factories to begin populating the informer caches
 	klog.Info("Starting Kube-Queue controller")
@@ -119,6 +112,16 @@ func (c *Controller) Run(threadiness int, stopCh <-chan struct{}) error {
 	// TODO: add all synced needed to syncs
 	if ok := cache.WaitForCacheSync(stopCh, syncs...); !ok {
 		return fmt.Errorf("failed to wait for caches to sync")
+	}
+
+	// Launch extension worker to call RPC asynchronously
+	for i := 0; i < threadiness; i++ {
+		go func() {
+			for {
+				qu := <-c.extCh
+				c.extensionWorker(qu)
+			}
+		}()
 	}
 
 	klog.Info("Starting workers")
@@ -132,6 +135,23 @@ func (c *Controller) Run(threadiness int, stopCh <-chan struct{}) error {
 	klog.Info("Shutting down workers")
 
 	return nil
+}
+
+func (c *Controller) extensionWorker(qu *queue.QueueUnit) {
+	key := qu.Serialize()
+	extClient, exist := c.ExtensionClients[qu.Spec.JobType]
+	if !exist {
+		klog.Errorf("cannot find the corresponding extension client for %s %s", qu.Spec.JobType, key)
+		c.WorkQueue.AddRateLimited(key)
+	}
+
+	err := extClient.DequeueJob(qu)
+	if err != nil {
+		klog.Errorf("error calling extension %s DequeueJob method: %v", qu.Spec.JobType, err)
+		c.WorkQueue.AddRateLimited(key)
+	}
+
+	c.PC.MarkJobDequeued(qu.Namespace, qu.UID)
 }
 
 func (c *Controller) runWorker() {
@@ -181,10 +201,7 @@ func (c *Controller) syncHandler(key string) (bool, error) {
 		return false, fmt.Errorf("permission denied for job %s", key)
 	}
 
-	err = c.DequeueItem(qu)
-	if err != nil {
-		return false, err
-	}
+	c.DequeueItem(qu)
 
 	return true, nil
 }
