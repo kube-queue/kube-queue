@@ -6,9 +6,7 @@ import (
 
 // ServerOption is the main context object for the queue controller.
 type ServerOption struct {
-	ExtensionConfig string
-	KubeConfig      string
-	ListenTo        string
+	KubeConfig string
 }
 
 func NewServerOption() *ServerOption {
@@ -18,6 +16,4 @@ func NewServerOption() *ServerOption {
 
 func (s *ServerOption) AddFlags(fs *flag.FlagSet) {
 	fs.StringVar(&s.KubeConfig, "kubeconfig", "", "the path to the kube config")
-	fs.StringVar(&s.ListenTo, "listen", "", "the address queue-controller will listen to")
-	fs.StringVar(&s.ExtensionConfig, "extensions", "", "the path to the extension configuration file")
 }
