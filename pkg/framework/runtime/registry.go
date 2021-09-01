@@ -14,22 +14,14 @@
  limitations under the License.
 */
 
-package options
+package runtime
 
 import (
-	"flag"
+	"github.com/kube-queue/kube-queue/pkg/framework"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
-// ServerOption is the main context object for the queue controller.
-type ServerOption struct {
-	KubeConfig string
-}
+// PluginFactory is a function that builds a plugin.
+type PluginFactory = func(configuration runtime.Object, handle framework.Handle) (framework.Plugin, error)
 
-func NewServerOption() *ServerOption {
-	s := ServerOption{}
-	return &s
-}
-
-func (s *ServerOption) AddFlags(fs *flag.FlagSet) {
-	fs.StringVar(&s.KubeConfig, "kubeconfig", "", "the path to the kube config")
-}
+type Registry map[string]PluginFactory

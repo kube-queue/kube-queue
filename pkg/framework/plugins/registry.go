@@ -14,22 +14,20 @@
  limitations under the License.
 */
 
-package options
+package plugins
 
 import (
-	"flag"
+	"github.com/kube-queue/kube-queue/pkg/framework/plugins/priority"
+	"github.com/kube-queue/kube-queue/pkg/framework/plugins/resourcequota"
+	"github.com/kube-queue/kube-queue/pkg/framework/runtime"
 )
 
-// ServerOption is the main context object for the queue controller.
-type ServerOption struct {
-	KubeConfig string
-}
-
-func NewServerOption() *ServerOption {
-	s := ServerOption{}
-	return &s
-}
-
-func (s *ServerOption) AddFlags(fs *flag.FlagSet) {
-	fs.StringVar(&s.KubeConfig, "kubeconfig", "", "the path to the kube config")
+// NewInTreeRegistry builds the registry with all the in-tree plugins.
+// A scheduler that runs out of tree plugins can register additional plugins
+// through the WithFrameworkOutOfTreeRegistry option.
+func NewInTreeRegistry() runtime.Registry {
+	return runtime.Registry{
+		resourcequota.Name: resourcequota.New,
+		priority.Name:      priority.New,
+	}
 }

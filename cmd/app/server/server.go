@@ -1,18 +1,30 @@
+/*
+ Copyright 2021 The Kube-Queue Authors.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+*/
+
 package app
 
 import (
-	"io/ioutil"
 	"os"
 	"time"
 
-	communicate "github.com/kube-queue/kube-queue/pkg/comm/queue"
+	"github.com/kube-queue/api/pkg/client/clientset/versioned"
+	externalversions "github.com/kube-queue/api/pkg/client/informers/externalversions"
 
 	"github.com/kube-queue/kube-queue/cmd/app/options"
-	extension "github.com/kube-queue/kube-queue/pkg/comm/extension"
 	"github.com/kube-queue/kube-queue/pkg/controller"
-	"github.com/kube-queue/kube-queue/pkg/permission"
-	log "github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v2"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
@@ -25,7 +37,7 @@ const (
 )
 
 func Run(opt *options.ServerOption) error {
-	log.Infof("%+v", apiVersion)
+	klog.Infof("%+v", apiVersion)
 
 	stopCh := signals.SetupSignalHandler()
 
@@ -44,46 +56,26 @@ func Run(opt *options.ServerOption) error {
 	}
 
 	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, time.Second*30)
-	quotaList := kubeInformerFactory.Core().V1().ResourceQuotas().Lister()
-
-	// Setup the Permission Counter Client
-	pc := permission.MakeResourcePermissionCounter(quotaList)
-
-	// Create Extension Client (for release job)
-	data, err := ioutil.ReadFile(opt.ExtensionConfig)
-	typeAddr := make(map[string]string)
-	err = yaml.Unmarshal(data, &typeAddr)
+	restConfig, err := clientcmd.BuildConfigFromFlags("", opt.KubeConfig)
 	if err != nil {
 		return err
 	}
-	extClients := map[string]extension.ExtensionClientInterface{}
-	for jobType, addr := range typeAddr {
-		ec, err := extension.MakeExtensionClient(addr)
-		if err != nil {
-			return err
-		}
-		extClients[jobType] = ec
+
+	queueClient, err := versioned.NewForConfig(restConfig)
+	if err != nil {
+		return err
 	}
 
-	qController, err := controller.NewController(kubeClient, pc, extClients)
+	queueInformerFactory := externalversions.NewSharedInformerFactory(queueClient, 0)
+	queueInformer := queueInformerFactory.Scheduling().V1alpha1().QueueUnits().Informer()
+
+	qController, err := controller.NewController(kubeClient, opt.KubeConfig, kubeInformerFactory, queueClient, queueInformer)
 	if err != nil {
 		klog.Fatalln("Error building controller\n")
 	}
 
 	kubeInformerFactory.Start(stopCh)
-
-	// Setup the Server
-	server := communicate.MakeQueueServer(qController)
-
-	go func() {
-		if serverErr := communicate.StartServer(server, opt.ListenTo); serverErr != nil {
-			klog.Fatalln("server stopped!")
-		}
-	}()
-
-	if err = qController.Run(2, stopCh); err != nil {
-		klog.Fatalf("Error running controller: %s", err.Error())
-	}
+	qController.Start()
 
 	return nil
 }
