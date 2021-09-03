@@ -1,0 +1,99 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    control-plane: kube-queue
+  name: kube-queue
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kube-queue-controller
+  namespace: kube-queue
+  labels:
+    control-plane: kube-queue-controller
+spec:
+  selector:
+    matchLabels:
+      control-plane: kube-queue-controller
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        control-plane: kube-queue-controller
+    spec:
+      tolerations:
+        - key: node-role.kubernetes.io/master
+          effect: NoSchedule
+      nodeSelector:
+        node-role.kubernetes.io/master: ""
+      serviceAccountName: kube-queue
+      containers:
+        - image: {{ .Values.controller.image.repository }}:{{ .Values.controller.image.tag }}
+          imagePullPolicy: Always
+          name: controller
+          resources:
+            {{- toYaml .Values.controller.resources | nindent 12 }}
+      terminationGracePeriodSeconds: 10
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tf-operator-extension
+  namespace: kube-queue
+  labels:
+    control-plane: tf-operator-extension
+spec:
+  selector:
+    matchLabels:
+      control-plane: tf-operator-extension
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        control-plane: tf-operator-extension
+    spec:
+      tolerations:
+        - key: node-role.kubernetes.io/master
+          effect: NoSchedule
+      nodeSelector:
+        node-role.kubernetes.io/master: ""
+      serviceAccountName: kube-queue
+      containers:
+        - image: {{ .Values.extension.tf.image.repository }}:{{ .Values.extension.tf.image.tag }}
+          imagePullPolicy: Always
+          name: controller
+          resources:
+            {{- toYaml .Values.extension.tf.resources | nindent 12 }}
+      terminationGracePeriodSeconds: 10
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pytorch-operator-extesion
+  labels:
+    control-plane: pytorch-operator-extesion
+  namespace: kube-queue
+spec:
+  selector:
+    matchLabels:
+      control-plane: pytorch-operator-extesion
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        control-plane: pytorch-operator-extesion
+    spec:
+      tolerations:
+        - key: node-role.kubernetes.io/master
+          effect: NoSchedule
+      nodeSelector:
+        node-role.kubernetes.io/master: ""
+      serviceAccountName: kube-queue
+      containers:
+        - name: pytorch-operator-extesion
+          image: {{ .Values.extension.pytorch.image.repository }}:{{ .Values.extension.pytorch.image.tag }}
+          imagePullPolicy: Always
+          resources:
+            {{- toYaml .Values.extension.pytorch.resources | nindent 12 }}
+      terminationGracePeriodSeconds: 10
