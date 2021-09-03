@@ -2,7 +2,8 @@ apiVersion: "kubeflow.org/v1"
 kind: "TFJob"
 metadata:
   name: "job1"
-  annotations: {"kube-queue": "pending"}
+  annotations:
+    scheduling.x-k8s.io/suspend: "true"
 spec:
   tfReplicaSpecs:
     PS:
@@ -18,7 +19,7 @@ spec:
                 - -c
                 - --
               args:
-                - "sleep infinity"
+                - "sleep 20s"
               resources:
                 requests:
                   cpu: 1
@@ -40,7 +41,7 @@ spec:
                 - -c
                 - --
               args:
-                - "sleep infinity"
+                - "sleep 20s"
               resources:
                 requests:
                   cpu: 1
