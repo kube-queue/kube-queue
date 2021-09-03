@@ -44,18 +44,20 @@ func NewScheduler(multiSchedulingQueue queue.MultiSchedulingQueue, fw framework.
 	return sche, nil
 }
 
-func (s *Scheduler) Start() {
-	s.internalSchedule()
+func (s *Scheduler) Start(ctx context.Context) {
+	s.internalSchedule(ctx)
 }
 
 // Internal start scheduling
-func (s *Scheduler) internalSchedule() {
+func (s *Scheduler) internalSchedule(ctx context.Context) {
 	for {
-		s.schedule()
+		s.schedule(ctx)
 	}
 }
 
-func (s *Scheduler) schedule() {
+func (s *Scheduler) schedule(ctx context.Context) {
+	schedulingCycleCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	sortedQueue := s.multiSchedulingQueue.SortedQueue()
 	for _, q := range sortedQueue {
 		if q.Length() > 0 {
@@ -64,17 +66,17 @@ func (s *Scheduler) schedule() {
 			if err != nil {
 				klog.Errorf("get topunit err %v", err)
 			}
-			status := s.fw.RunFilterPlugins(unitInfo)
+			status := s.fw.RunFilterPlugins(schedulingCycleCtx, unitInfo)
 			if status.Code() == framework.Success {
 				klog.Infof("dequeue %v", unitInfo.Name)
-				s.fw.RunReservePluginsReserve(unitInfo)
+				s.fw.RunReservePluginsReserve(schedulingCycleCtx, unitInfo)
 
 				go func() {
 					err := s.Dequeue(unitInfo.Unit)
 					if err != nil {
 						klog.Errorf("%v Dequeue failed %v", unitInfo.Name, err.Error())
 						// 构建一个临时存储的位置
-						s.fw.RunReservePluginsUnreserve(unitInfo)
+						s.fw.RunReservePluginsUnreserve(schedulingCycleCtx, unitInfo)
 						s.ErrorFunc(unitInfo, q)
 					}
 				}()

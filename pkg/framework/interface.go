@@ -53,10 +53,10 @@ type Framework interface {
 	// QueueSortFunc returns the function to sort pods in scheduling queue
 	MultiQueueSortFunc() MultiQueueLessFunc
 	QueueSortFuncMap() map[string]QueueLessFunc
-	RunFilterPlugins(*QueueUnitInfo) *Status
-	RunScorePlugins() (int64, bool)
-	RunReservePluginsReserve(*QueueUnitInfo) *Status
-	RunReservePluginsUnreserve(*QueueUnitInfo)
+	RunFilterPlugins(context.Context, *QueueUnitInfo) *Status
+	RunScorePlugins(context.Context) (int64, bool)
+	RunReservePluginsReserve(context.Context, *QueueUnitInfo) *Status
+	RunReservePluginsUnreserve(context.Context, *QueueUnitInfo)
 }
 
 type Status struct {

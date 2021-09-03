@@ -17,6 +17,8 @@
 package controller
 
 import (
+	"context"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
@@ -52,7 +54,8 @@ func NewController(
 	kubeConfigPath string,
 	informersFactory informers.SharedInformerFactory,
 	queueClient *versioned.Clientset,
-	queueInformer cache.SharedIndexInformer) (*Controller, error) {
+	queueInformer cache.SharedIndexInformer,
+	stopCh <-chan struct{}) (*Controller, error) {
 
 	// Create event broadcaster
 	eventBroadcaster := record.NewBroadcaster()
@@ -81,7 +84,7 @@ func NewController(
 		queueInformer:        queueInformer,
 	}
 	controller.addAllEventHandlers(queueInformer)
-	go controller.queueInformer.Run(nil)
+	go controller.queueInformer.Run(stopCh)
 
 	controller.scheduler, err = scheduler.NewScheduler(multiSchedulingQueue, fw, queueClient)
 	if err != nil {
@@ -91,8 +94,8 @@ func NewController(
 	return controller, nil
 }
 
-func (c *Controller) Start() {
+func (c *Controller) Start(ctx context.Context) {
 	c.multiSchedulingQueue.Run()
-	c.scheduler.Start()
+	c.scheduler.Start(ctx)
 	c.multiSchedulingQueue.Close()
 }

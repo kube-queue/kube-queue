@@ -17,6 +17,8 @@
 package controller
 
 import (
+	"context"
+
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
 
@@ -85,7 +87,7 @@ func (c *Controller) AddQueueUnit(obj interface{}) {
 func (c *Controller) AddDequeuedQueueUnit(obj interface{}) {
 	unit := obj.(*v1alpha1.QueueUnit)
 	// TODO add reserveIfNotPresent
-	c.fw.RunReservePluginsReserve(framework.NewQueueUnitInfo(unit))
+	c.fw.RunReservePluginsReserve(context.TODO(), framework.NewQueueUnitInfo(unit))
 }
 
 func (c *Controller) DeleteQueueUnit(obj interface{}) {
@@ -106,7 +108,7 @@ func (c *Controller) DeleteQueueUnit(obj interface{}) {
 func (c *Controller) DeleteDequeuedQueueUnit(obj interface{}) {
 	unit := obj.(*v1alpha1.QueueUnit)
 	// TODO add unreserveIfNotPresent
-	c.fw.RunReservePluginsUnreserve(framework.NewQueueUnitInfo(unit))
+	c.fw.RunReservePluginsUnreserve(context.TODO(), framework.NewQueueUnitInfo(unit))
 }
 
 func (c *Controller) UpdateQueueUnit(oldObj, newObj interface{}) {

@@ -113,8 +113,7 @@ func (p *PrioritySchedulingQueue) AddUnschedulableIfNotPresent(quInfo *framework
 		return nil
 	}
 
-	p.backoffQ.Add(quInfo)
-	return nil
+	return p.backoffQ.Add(quInfo)
 }
 
 func (p *PrioritySchedulingQueue) Delete(q *v1alpha1.QueueUnit) error {
@@ -215,7 +214,11 @@ func (p *PrioritySchedulingQueue) flushBackoffQCompleted() {
 			klog.Errorf("Unable to pop pod %v from backoff queue despite backoff completion.", qu.Unit.Namespace+"/"+qu.Unit.Name)
 			return
 		}
-		p.items.Add(rawQUInfo)
+		err = p.items.Add(rawQUInfo)
+		if err != nil {
+			klog.Errorf("Unable to add pod %v back to active queue despite backoff completion.", qu.Unit.Namespace+"/"+qu.Unit.Name)
+			return
+		}
 	}
 }
 

@@ -1,0 +1,5 @@
+run:
+  skip-files:
+    - pkg/queue/heap/heap.go
+    - pkg/queue/heap/heap_test.go
+    - pkg/queue/multischedulingqueue/multi_scheduling_queue.go
