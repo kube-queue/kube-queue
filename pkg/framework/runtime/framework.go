@@ -17,6 +17,8 @@
 package runtime
 
 import (
+	"context"
+
 	"github.com/kube-queue/kube-queue/pkg/framework"
 	"k8s.io/client-go/informers"
 )
@@ -45,9 +47,9 @@ func (f *frameworkImpl) QueueSortFuncMap() map[string]framework.QueueLessFunc {
 	return queueLessFuncMap
 }
 
-func (f *frameworkImpl) RunFilterPlugins(unit *framework.QueueUnitInfo) *framework.Status {
+func (f *frameworkImpl) RunFilterPlugins(ctx context.Context, unit *framework.QueueUnitInfo) *framework.Status {
 	for _, pl := range f.filterPlugins {
-		pluginStatus := pl.Filter(nil, unit)
+		pluginStatus := pl.Filter(ctx, unit)
 		if pluginStatus.Code() != framework.Success {
 			return pluginStatus
 		}
@@ -56,13 +58,13 @@ func (f *frameworkImpl) RunFilterPlugins(unit *framework.QueueUnitInfo) *framewo
 	return framework.NewStatus(framework.Success, "")
 }
 
-func (f *frameworkImpl) RunScorePlugins() (int64, bool) {
+func (f *frameworkImpl) RunScorePlugins(ctx context.Context) (int64, bool) {
 	return 0, false
 }
 
-func (f *frameworkImpl) RunReservePluginsReserve(unit *framework.QueueUnitInfo) *framework.Status {
+func (f *frameworkImpl) RunReservePluginsReserve(ctx context.Context, unit *framework.QueueUnitInfo) *framework.Status {
 	for _, pl := range f.reservePlugins {
-		pluginStatus := pl.Reserve(nil, unit)
+		pluginStatus := pl.Reserve(ctx, unit)
 		if pluginStatus.Code() != framework.Success {
 			return pluginStatus
 		}
@@ -71,9 +73,9 @@ func (f *frameworkImpl) RunReservePluginsReserve(unit *framework.QueueUnitInfo) 
 	return framework.NewStatus(framework.Success, "")
 }
 
-func (f *frameworkImpl) RunReservePluginsUnreserve(unit *framework.QueueUnitInfo) {
+func (f *frameworkImpl) RunReservePluginsUnreserve(ctx context.Context, unit *framework.QueueUnitInfo) {
 	for _, pl := range f.reservePlugins {
-		pl.Unreserve(nil, unit)
+		pl.Unreserve(ctx, unit)
 	}
 }
 

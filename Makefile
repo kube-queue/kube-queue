@@ -14,3 +14,14 @@ build-queue: fixcodec
 .PHONY: fixcodec
 	hack/fix-codec-factory.sh
 
+.PHONY: update-vendor
+update-vendor:
+	hack/update-vendor.sh
+
+.PHONY: unit-test
+unit-test: fixcodec update-vendor
+	hack/unit-test.sh
+
+.PHONY: clean
+clean:
+	rm -rf ./bin

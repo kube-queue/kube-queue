@@ -17,19 +17,19 @@
 package app
 
 import (
+	"context"
 	"os"
 	"time"
 
 	"github.com/kube-queue/api/pkg/client/clientset/versioned"
 	externalversions "github.com/kube-queue/api/pkg/client/informers/externalversions"
-
 	"github.com/kube-queue/kube-queue/cmd/app/options"
 	"github.com/kube-queue/kube-queue/pkg/controller"
+
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
-	"k8s.io/sample-controller/pkg/signals"
 )
 
 const (
@@ -38,8 +38,6 @@ const (
 
 func Run(opt *options.ServerOption) error {
 	klog.Infof("%+v", apiVersion)
-
-	stopCh := signals.SetupSignalHandler()
 
 	if len(os.Getenv("KUBECONFIG")) > 0 {
 		opt.KubeConfig = os.Getenv("KUBECONFIG")
@@ -68,14 +66,16 @@ func Run(opt *options.ServerOption) error {
 
 	queueInformerFactory := externalversions.NewSharedInformerFactory(queueClient, 0)
 	queueInformer := queueInformerFactory.Scheduling().V1alpha1().QueueUnits().Informer()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	qController, err := controller.NewController(kubeClient, opt.KubeConfig, kubeInformerFactory, queueClient, queueInformer)
+	qController, err := controller.NewController(kubeClient, opt.KubeConfig, kubeInformerFactory, queueClient, queueInformer, ctx.Done())
 	if err != nil {
 		klog.Fatalln("Error building controller\n")
 	}
 
-	kubeInformerFactory.Start(stopCh)
-	qController.Start()
+	kubeInformerFactory.Start(ctx.Done())
+	qController.Start(ctx)
 
 	return nil
 }
