@@ -1,0 +1,17 @@
+apiVersion: queueunits.scheduling.x-k8s.io/v1alpha1
+kind: QueueUnit
+metadata:
+  name: unit1
+  namespace: default
+spec:
+  consumerRef: # the origin job
+    apiVersion: kubeflow.org/v1
+    kind: TFJob
+    name: job1
+    namespace: default
+  queue: default # The name of the submission queue
+  priority: 100
+  priorityClassName: high-priority
+  resource: # The resource request of the job
+    cpu: 3
+    memory: 3Gi
