@@ -19,7 +19,7 @@ spec:
                 - -c
                 - --
               args:
-                - "sleep 10s"
+                - "sleep 30s"
               resources:
                 requests:
                   cpu: 1
@@ -41,7 +41,7 @@ spec:
                 - -c
                 - --
               args:
-                - "sleep 10s"
+                - "sleep 30s"
               resources:
                 requests:
                   cpu: 1

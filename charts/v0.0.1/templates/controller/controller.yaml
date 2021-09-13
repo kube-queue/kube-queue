@@ -22,11 +22,6 @@ spec:
       labels:
         control-plane: kube-queue-controller
     spec:
-      tolerations:
-        - key: node-role.kubernetes.io/master
-          effect: NoSchedule
-      nodeSelector:
-        node-role.kubernetes.io/master: ""
       serviceAccountName: kube-queue
       containers:
         - image: {{ .Values.controller.image.repository }}:{{ .Values.controller.image.tag }}
@@ -53,11 +48,6 @@ spec:
       labels:
         control-plane: tf-operator-extension
     spec:
-      tolerations:
-        - key: node-role.kubernetes.io/master
-          effect: NoSchedule
-      nodeSelector:
-        node-role.kubernetes.io/master: ""
       serviceAccountName: kube-queue
       containers:
         - image: {{ .Values.extension.tf.image.repository }}:{{ .Values.extension.tf.image.tag }}
@@ -84,11 +74,6 @@ spec:
       labels:
         control-plane: pytorch-operator-extesion
     spec:
-      tolerations:
-        - key: node-role.kubernetes.io/master
-          effect: NoSchedule
-      nodeSelector:
-        node-role.kubernetes.io/master: ""
       serviceAccountName: kube-queue
       containers:
         - name: pytorch-operator-extesion
