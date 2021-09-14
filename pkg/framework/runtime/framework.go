@@ -19,19 +19,22 @@ package runtime
 import (
 	"context"
 
-	"github.com/kube-queue/kube-queue/pkg/framework"
 	"k8s.io/client-go/informers"
+
+	"github.com/kube-queue/api/pkg/client/clientset/versioned"
+	"github.com/kube-queue/kube-queue/pkg/framework"
 )
 
 var _ framework.Framework = &frameworkImpl{}
 
 type frameworkImpl struct {
-	multiQueueSortPlugin framework.MultiQueueSortPlugin
-	filterPlugins        []framework.FilterPlugin
-	queueSortPlugins     []framework.QueueSortPlugin
-	reservePlugins       []framework.ReservePlugin
-	kubeConfigPath       string
-	InformersFactory     informers.SharedInformerFactory
+	multiQueueSortPlugin   framework.MultiQueueSortPlugin
+	filterPlugins          []framework.FilterPlugin
+	queueSortPlugins       []framework.QueueSortPlugin
+	reservePlugins         []framework.ReservePlugin
+	kubeConfigPath         string
+	sharedInformersFactory informers.SharedInformerFactory
+	queueUnitClient        *versioned.Clientset
 }
 
 func (f *frameworkImpl) MultiQueueSortFunc() framework.MultiQueueLessFunc {
@@ -80,22 +83,30 @@ func (f *frameworkImpl) RunReservePluginsUnreserve(ctx context.Context, unit *fr
 }
 
 func (f *frameworkImpl) SharedInformerFactory() informers.SharedInformerFactory {
-	return f.InformersFactory
+	return f.sharedInformersFactory
 }
 
 func (f *frameworkImpl) KubeConfigPath() string {
 	return f.kubeConfigPath
 }
 
-func NewFramework(r Registry, kubeConfigPath string, informersFactory informers.SharedInformerFactory) (framework.Framework, error) {
+func (f *frameworkImpl) QueueUnitClient() *versioned.Clientset {
+	return f.queueUnitClient
+}
+
+func NewFramework(r Registry, kubeConfigPath string,
+	informersFactory informers.SharedInformerFactory,
+	queueUnitClient *versioned.Clientset,
+) (framework.Framework, error) {
 	filterPlugins := make([]framework.FilterPlugin, 0)
 	queueSortPlugins := make([]framework.QueueSortPlugin, 0)
 	reservePlugins := make([]framework.ReservePlugin, 0)
 	var multiQueueSortPlugin framework.MultiQueueSortPlugin
 
 	f := &frameworkImpl{
-		kubeConfigPath:   kubeConfigPath,
-		InformersFactory: informersFactory,
+		kubeConfigPath:         kubeConfigPath,
+		sharedInformersFactory: informersFactory,
+		queueUnitClient:        queueUnitClient,
 	}
 
 	for _, factory := range r {

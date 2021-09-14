@@ -45,28 +45,28 @@ type Controller struct {
 	multiSchedulingQueue queue.MultiSchedulingQueue
 	fw                   framework.Framework
 	scheduler            *scheduler.Scheduler
-	queueInformer        cache.SharedIndexInformer
-	queueClient          *versioned.Clientset
+	queueUnitInformer    cache.SharedIndexInformer
+	queueUnitClient      *versioned.Clientset
 }
 
 func NewController(
-	kubeclientset kubernetes.Interface,
+	kubeClient kubernetes.Interface,
 	kubeConfigPath string,
 	informersFactory informers.SharedInformerFactory,
-	queueClient *versioned.Clientset,
+	queueUnitClient *versioned.Clientset,
 	queueInformer cache.SharedIndexInformer,
 	stopCh <-chan struct{}) (*Controller, error) {
 
 	// Create event broadcaster
 	eventBroadcaster := record.NewBroadcaster()
 	eventBroadcaster.StartLogging(klog.Infof)
-	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{Interface: kubeclientset.CoreV1().Events("")})
+	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{Interface: kubeClient.CoreV1().Events("")})
 
 	schemeModified := scheme.Scheme
 	recorder := eventBroadcaster.NewRecorder(schemeModified, corev1.EventSource{Component: utils.ControllerAgentName})
 
 	r := plugins.NewInTreeRegistry()
-	fw, err := runtime.NewFramework(r, kubeConfigPath, informersFactory)
+	fw, err := runtime.NewFramework(r, kubeConfigPath, informersFactory, queueUnitClient)
 	if err != nil {
 		klog.Fatalf("new framework failed %v", err)
 	}
@@ -80,13 +80,13 @@ func NewController(
 		recorder:             recorder,
 		fw:                   fw,
 		multiSchedulingQueue: multiSchedulingQueue,
-		queueClient:          queueClient,
-		queueInformer:        queueInformer,
+		queueUnitClient:      queueUnitClient,
+		queueUnitInformer:    queueInformer,
 	}
 	controller.addAllEventHandlers(queueInformer)
-	go controller.queueInformer.Run(stopCh)
+	go controller.queueUnitInformer.Run(stopCh)
 
-	controller.scheduler, err = scheduler.NewScheduler(multiSchedulingQueue, fw, queueClient)
+	controller.scheduler, err = scheduler.NewScheduler(multiSchedulingQueue, fw, queueUnitClient)
 	if err != nil {
 		klog.Fatalf("init scheduler failed %s", err)
 	}

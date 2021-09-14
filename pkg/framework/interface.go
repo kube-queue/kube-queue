@@ -19,9 +19,10 @@ package framework
 import (
 	"context"
 
-	"k8s.io/client-go/informers"
+	"github.com/kube-queue/api/pkg/client/clientset/versioned"
 
 	"k8s.io/api/core/v1"
+	"k8s.io/client-go/informers"
 )
 
 // Code is the Status code/type which is returned from plugins.
@@ -118,4 +119,5 @@ type ReservePlugin interface {
 type Handle interface {
 	SharedInformerFactory() informers.SharedInformerFactory
 	KubeConfigPath() string
+	QueueUnitClient() *versioned.Clientset
 }
