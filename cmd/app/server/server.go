@@ -59,23 +59,24 @@ func Run(opt *options.ServerOption) error {
 		return err
 	}
 
-	queueClient, err := versioned.NewForConfig(restConfig)
+	queueUnitClient, err := versioned.NewForConfig(restConfig)
 	if err != nil {
 		return err
 	}
 
-	queueInformerFactory := externalversions.NewSharedInformerFactory(queueClient, 0)
-	queueInformer := queueInformerFactory.Scheduling().V1alpha1().QueueUnits().Informer()
+	queueUnitInformerFactory := externalversions.NewSharedInformerFactory(queueUnitClient, 0)
+	queueUnitInformer := queueUnitInformerFactory.Scheduling().V1alpha1().QueueUnits().Informer()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	qController, err := controller.NewController(kubeClient, opt.KubeConfig, kubeInformerFactory, queueClient, queueInformer, ctx.Done())
+	controller, err := controller.NewController(kubeClient, opt.KubeConfig, kubeInformerFactory, queueUnitClient, queueUnitInformer, ctx.Done())
 	if err != nil {
 		klog.Fatalln("Error building controller\n")
 	}
 
+	klog.Infof("Start successfully")
 	kubeInformerFactory.Start(ctx.Done())
-	qController.Start(ctx)
+	controller.Start(ctx)
 
 	return nil
 }

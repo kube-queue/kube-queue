@@ -20,13 +20,15 @@ import (
 	"context"
 	"time"
 
+	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/klog/v2"
+
 	"github.com/kube-queue/api/pkg/apis/scheduling/v1alpha1"
 	"github.com/kube-queue/api/pkg/client/clientset/versioned"
 	"github.com/kube-queue/kube-queue/pkg/framework"
 	"github.com/kube-queue/kube-queue/pkg/queue"
-	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/klog/v2"
 )
 
 type Scheduler struct {
@@ -77,19 +79,19 @@ func (s *Scheduler) schedule(ctx context.Context) {
 						klog.Errorf("%v Dequeue failed %v", unitInfo.Name, err.Error())
 						// 构建一个临时存储的位置
 						s.fw.RunReservePluginsUnreserve(schedulingCycleCtx, unitInfo)
-						s.ErrorFunc(unitInfo, q)
+						s.ErrorFunc(ctx, unitInfo, q)
 					}
 				}()
 			} else {
-				s.ErrorFunc(unitInfo, q)
+				s.ErrorFunc(ctx, unitInfo, q)
 			}
 			return
 		}
 	}
 }
 
-func (s *Scheduler) Dequeue(u *v1alpha1.QueueUnit) error {
-	_, err := s.QueueClient.SchedulingV1alpha1().QueueUnits(u.Namespace).Get(context.TODO(), u.Name, metav1.GetOptions{})
+func (s *Scheduler) Dequeue(queueUnit *v1alpha1.QueueUnit) error {
+	newQueueUnit, err := s.QueueClient.SchedulingV1alpha1().QueueUnits(queueUnit.Namespace).Get(context.TODO(), queueUnit.Name, metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
 			return nil
@@ -97,22 +99,28 @@ func (s *Scheduler) Dequeue(u *v1alpha1.QueueUnit) error {
 		return err
 	}
 
-	u.Status.Phase = v1alpha1.Dequeued
-	u.Status.Message = "Dequeued because schedule successfully"
-	_, err = s.QueueClient.SchedulingV1alpha1().QueueUnits(u.Namespace).Update(context.TODO(), u, metav1.UpdateOptions{})
+	newQueueUnit.Status.Phase = v1alpha1.Dequeued
+	newQueueUnit.Status.Message = "Dequeued because schedule successfully"
+	_, err = s.QueueClient.SchedulingV1alpha1().QueueUnits(queueUnit.Namespace).Update(context.TODO(), newQueueUnit, metav1.UpdateOptions{})
 	if err != nil {
 		return err
 	}
 
-	klog.Infof("%v/%v dequeue success", u.Namespace, u.Name)
+	klog.Infof("%v/%v dequeue success", newQueueUnit.Namespace, newQueueUnit.Name)
 	return nil
 }
 
-func (s *Scheduler) ErrorFunc(qu *framework.QueueUnitInfo, q queue.SchedulingQueue) {
-	qu.Attempts++
-	qu.Timestamp = time.Now()
-	err := q.AddUnschedulableIfNotPresent(qu)
+func (s *Scheduler) ErrorFunc(ctx context.Context, queueUnit *framework.QueueUnitInfo, q queue.SchedulingQueue) {
+	queueUnit.Attempts++
+	queueUnit.Timestamp = time.Now()
+	newQueueUnit, err := s.QueueClient.SchedulingV1alpha1().QueueUnits(queueUnit.Unit.Namespace).Get(ctx, queueUnit.Unit.Name, v1.GetOptions{})
 	if err != nil {
-		klog.Errorf("Add Unschedulable QueueUnit %v failed %v", qu.Name)
+		klog.Errorf("get qu %v error %v", queueUnit.Name, err)
+		return
+	}
+	queueUnit.Unit = newQueueUnit
+	err = q.AddUnschedulableIfNotPresent(queueUnit)
+	if err != nil {
+		klog.Errorf("Add Unschedulable QueueUnit %v failed %v", queueUnit.Name)
 	}
 }

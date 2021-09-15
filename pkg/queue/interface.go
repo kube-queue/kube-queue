@@ -36,6 +36,9 @@ type MultiSchedulingQueue interface {
 // SchedulingQueue is interface of Single Scheduling Queue.
 type SchedulingQueue interface {
 	Add(*schedv1alpha1.QueueUnit) error
+	// AddUnschedulableIfNotPresent inserts a queue unit that cannot be scheduled into
+	// the queue, unless it is already in the queue. If there has been a recent move
+	// request, then the queue unit is put in `podBackoffQ`.
 	AddUnschedulableIfNotPresent(*framework.QueueUnitInfo) error
 	Delete(*schedv1alpha1.QueueUnit) error
 	Update(*schedv1alpha1.QueueUnit, *schedv1alpha1.QueueUnit) error
