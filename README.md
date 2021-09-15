@@ -2,6 +2,15 @@
 [![Build Status](https://app.travis-ci.com/kube-queue/kube-queue.svg?token=CNioeKg6kJ72Zcc3ZpeQ&branch=main)](https://app.travis-ci.com/kube-queue/kube-queue)
 
 # Kube-queue
+Kube-queue is designed to manage AI/ML workloads in a Kubernetes native manner. It allows system admins to customize policy for each queue in the form of plugins so both flexibility and fairness are guaranteed between different queues. Combined with a quota system (like resource quota), resource allocation is automated and optimized to maximize utilization of cluster resources.
+
+### Architecture
+![arch](./doc/img/Architecture.png)
+
+### Key features
+- Queue based on priority and creation time
+- Support dynamic adjustment of job priority in queue
+- Dequeue based on ResourceQuota
 
 
 ### Install
