@@ -83,6 +83,7 @@ func (s *Scheduler) schedule(ctx context.Context) {
 					}
 				}()
 			} else {
+				klog.Errorf("%v filter failed because %v", unitInfo.Name, status.Message())
 				s.ErrorFunc(ctx, unitInfo, q)
 			}
 			return

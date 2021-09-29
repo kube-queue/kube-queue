@@ -37,14 +37,14 @@ const (
 	ErrNoProperResourceQuotaFoundTemplate = "cannot find proper resource quota in namespace %s"
 	ErrResourceQuotaStatusHardNilTemplate = "cannot find hard limit in the status of resource quota %s"
 	ErrResourceQuotaTypeNotFoundTemplate  = "resource type %s not found in resource quota %s"
-	ErrResourceQuotaInsufficientTemplate  = "insufficient resource left for %s in resource quota %s"
+	ErrResourceQuotaInsufficientTemplate  = "insufficient resource left for %s in resource quota %s reserved %v/%v, request %v"
 	ErrQueueUnitAlreadyReservedTemplate   = "queue unit %s already reserved"
 )
 
 // ResourceQuota is a plugin that implements ResourceQuota filter.
 type ResourceQuota struct {
-	lock     sync.Mutex
-	reserved corev1.ResourceList
+	sync.RWMutex
+	reserved map[string]corev1.ResourceList
 	quRecord map[string]interface{}
 	rqLister clientcorev1.ResourceQuotaLister
 }
@@ -62,22 +62,29 @@ func QueueUnitToKey(qu *framework.QueueUnitInfo) string {
 
 // Reserve resource for the given QueueUnitInfo
 func (rq *ResourceQuota) Reserve(ctx context.Context, qu *framework.QueueUnitInfo) *framework.Status {
-	rq.lock.Lock()
-	defer rq.lock.Unlock()
+	rq.Lock()
+	defer rq.Unlock()
 
 	key := QueueUnitToKey(qu)
 	if _, exist := rq.quRecord[key]; exist {
 		return framework.NewStatus(framework.Error, fmt.Sprintf(ErrQueueUnitAlreadyReservedTemplate, key))
 	}
 
+	ns := qu.Unit.Namespace
+	reservedNS, exist := rq.reserved[ns]
+	if !exist {
+		reservedNS = make(corev1.ResourceList)
+	}
+
 	for rName, rQuantity := range qu.Unit.Spec.Resource {
-		val, exist := rq.reserved[rName]
+		val, exist := reservedNS[rName]
 		if exist {
 			rQuantity.Add(val)
 		}
-		rq.reserved[rName] = rQuantity
+		reservedNS[rName] = rQuantity
 	}
 
+	rq.reserved[ns] = reservedNS
 	rq.quRecord[key] = nil
 
 	return framework.NewStatus(framework.Success, "")
@@ -85,36 +92,54 @@ func (rq *ResourceQuota) Reserve(ctx context.Context, qu *framework.QueueUnitInf
 
 // Unreserve resource for the given QueueUnitInfo
 func (rq *ResourceQuota) Unreserve(ctx context.Context, qu *framework.QueueUnitInfo) {
-	rq.lock.Lock()
-	defer rq.lock.Unlock()
+	rq.Lock()
+	defer rq.Unlock()
+
+	key := QueueUnitToKey(qu)
+	if _, exist := rq.quRecord[key]; !exist {
+		return
+	}
+
+	ns := qu.Unit.Namespace
+	reservedNS, exist := rq.reserved[ns]
+	if !exist {
+		return
+	}
 
 	for rName, rQuantity := range qu.Unit.Spec.Resource {
-		val, exist := rq.reserved[rName]
+		val, exist := reservedNS[rName]
 		if !exist {
 			continue
 		}
 		// resource quantity found
 		val.Sub(rQuantity)
 		if val.Sign() <= 0 {
-			delete(rq.reserved, rName)
+			delete(reservedNS, rName)
 			continue
 		}
-		rq.reserved[rName] = val
+		reservedNS[rName] = val
 	}
 
-	key := QueueUnitToKey(qu)
+	rq.reserved[ns] = reservedNS
 	delete(rq.quRecord, key)
 }
 
 // GetReservedByResourceName returns reserved resource quantity if the ResourceName is found,
 // otherwise returns zero Quantity
-func (rq *ResourceQuota) GetReservedByResourceName(rName corev1.ResourceName) resource.Quantity {
-	rq.lock.Lock()
-	defer rq.lock.Unlock()
-	val, exist := rq.reserved[rName]
+func (rq *ResourceQuota) GetReservedByResourceName(ns string, rName corev1.ResourceName) resource.Quantity {
+	rq.RLock()
+	defer rq.RUnlock()
+
+	reservedNS, exist := rq.reserved[ns]
+	if !exist {
+		reservedNS = make(corev1.ResourceList)
+	}
+
+	val, exist := reservedNS[rName]
 	if exist {
 		return val
 	}
+
 	return *resource.NewQuantity(0, resource.BinarySI)
 }
 
@@ -158,14 +183,13 @@ func (rq *ResourceQuota) Filter(ctx context.Context, qu *framework.QueueUnitInfo
 	for rName, rQuantity := range qu.Unit.Spec.Resource {
 		basketQuantity, found := basket.Spec.Hard[rName]
 		if !found {
-			return framework.NewStatus(framework.Error,
-				fmt.Sprintf(ErrResourceQuotaTypeNotFoundTemplate, rName, basket.GetName()))
+			continue
 		}
-		reservedQuantity := rq.GetReservedByResourceName(rName)
+		reservedQuantity := rq.GetReservedByResourceName(ns, rName)
 		reservedQuantity.Add(rQuantity)
 		if basketQuantity.Cmp(reservedQuantity) < 0 {
 			return framework.NewStatus(framework.Error,
-				fmt.Sprintf(ErrResourceQuotaInsufficientTemplate, rName, basket.GetName()))
+				fmt.Sprintf(ErrResourceQuotaInsufficientTemplate, rName, basket.GetName(), reservedQuantity.Value(), basketQuantity.Value(), rQuantity.Value()))
 		}
 	}
 
@@ -176,7 +200,7 @@ func (rq *ResourceQuota) Filter(ctx context.Context, qu *framework.QueueUnitInfo
 func New(_ runtime.Object, handle framework.Handle) (framework.Plugin, error) {
 	return &ResourceQuota{
 		rqLister: handle.SharedInformerFactory().Core().V1().ResourceQuotas().Lister(),
-		reserved: map[corev1.ResourceName]resource.Quantity{},
-		quRecord: map[string]interface{}{},
+		reserved: make(map[string]corev1.ResourceList),
+		quRecord: make(map[string]interface{}),
 	}, nil
 }
