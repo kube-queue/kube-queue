@@ -78,6 +78,10 @@ func (s *Status) Code() Code {
 	return s.code
 }
 
+func (s *Status) Message() string {
+	return s.message
+}
+
 // Plugin is the parent type for all the scheduling framework plugins.
 type Plugin interface {
 	Name() string

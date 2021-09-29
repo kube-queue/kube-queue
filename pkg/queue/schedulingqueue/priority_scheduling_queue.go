@@ -22,10 +22,8 @@ import (
 	"time"
 
 	"k8s.io/apimachinery/pkg/util/wait"
-
-	"k8s.io/kubernetes/pkg/scheduler/util"
-
 	"k8s.io/klog/v2"
+	"k8s.io/kubernetes/pkg/scheduler/util"
 
 	"github.com/kube-queue/api/pkg/apis/scheduling/v1alpha1"
 	"github.com/kube-queue/kube-queue/pkg/framework"
