@@ -19,7 +19,7 @@ Kube-queue is designed to manage AI/ML workloads in a Kubernetes native manner. 
 $ git clone https://github.com/kube-queue/kube-queue.git
 ```
 
-2. Change to karmada directory:
+2. Change to Kube-queue directory:
 ```shell
 $ cd kube-queue
 ```
