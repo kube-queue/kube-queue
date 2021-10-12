@@ -20,7 +20,6 @@ import (
 	"context"
 	"time"
 
-	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
@@ -63,28 +62,31 @@ func (s *Scheduler) schedule(ctx context.Context) {
 	sortedQueue := s.multiSchedulingQueue.SortedQueue()
 	for _, q := range sortedQueue {
 		if q.Length() > 0 {
-			klog.Info("schedule cycle")
 			unitInfo, err := q.Pop()
 			if err != nil {
 				klog.Errorf("get topunit err %v", err)
 			}
+			klog.Info("---schedule begin %v ---", unitInfo.Name)
 			status := s.fw.RunFilterPlugins(schedulingCycleCtx, unitInfo)
+			klog.Info("filter status %v %v", status.Code(), status.Message())
 			if status.Code() == framework.Success {
 				klog.Infof("dequeue %v", unitInfo.Name)
-				s.fw.RunReservePluginsReserve(schedulingCycleCtx, unitInfo)
-
+				status = s.fw.RunReservePluginsReserve(schedulingCycleCtx, unitInfo)
+				klog.Info("reserve status %v %v", status.Code(), status.Message())
 				go func() {
 					err := s.Dequeue(unitInfo.Unit)
 					if err != nil {
-						klog.Errorf("%v Dequeue failed %v", unitInfo.Name, err.Error())
+						klog.Errorf("dequeue %v failed: %v", unitInfo.Name, err.Error())
 						// 构建一个临时存储的位置
 						s.fw.RunReservePluginsUnreserve(schedulingCycleCtx, unitInfo)
 						s.ErrorFunc(ctx, unitInfo, q)
 					}
+					klog.Info("dequeue %v success", unitInfo.Name)
+					klog.Info("---schedule end %v ---", unitInfo.Name)
 				}()
 			} else {
-				klog.Errorf("%v filter failed because %v", unitInfo.Name, status.Message())
 				s.ErrorFunc(ctx, unitInfo, q)
+				klog.Info("---schedule end %v ---", unitInfo.Name)
 			}
 			return
 		}
@@ -94,9 +96,6 @@ func (s *Scheduler) schedule(ctx context.Context) {
 func (s *Scheduler) Dequeue(queueUnit *v1alpha1.QueueUnit) error {
 	newQueueUnit, err := s.QueueClient.SchedulingV1alpha1().QueueUnits(queueUnit.Namespace).Get(context.TODO(), queueUnit.Name, metav1.GetOptions{})
 	if err != nil {
-		if errors.IsNotFound(err) {
-			return nil
-		}
 		return err
 	}
 
