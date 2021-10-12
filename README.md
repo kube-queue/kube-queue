@@ -5,7 +5,7 @@
 kube-queue is designed to manage AI/ML and batch workloads in Kubernetes. It allows system admins to customize job queue management for queues to provide flexibility and fairness between different queues. Combined with a quota system (similar to Kubernetes resource quota), kube-queue automates and optimizes workload and resource quota mangement to maximize cluster resource utilization.
 
 ### Architecture
-![arch](./doc/img/Architecture-updated.jpg)
+![arch](./doc/img/architecture-updated.jpg)
 
 ### Key features
 - Job queue based on workload priority and creation time and quota
