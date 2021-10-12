@@ -122,7 +122,7 @@ tfjob.kubeflow.org/job2 created
 $ kubectl get tfjob
 NAME   STATE     AGE
 job1   Running   5s
-job2             5s
+job2   Queuing   5s
 
 $ kubectl get pods
 NAME            READY   STATUS    RESTARTS   AGE
