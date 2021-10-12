@@ -10,7 +10,7 @@ kube-queue is designed to manage AI/ML and batch workloads in Kubernetes. It all
 ### Key features
 - Job queue based on workload priority and creation time and quota
 - Support dynamic adjustment of job priority in queue
-- Faireness between queues
+- Provide faireness between queues
 
 
 ### Install
