@@ -2,15 +2,15 @@
 [![Build Status](https://app.travis-ci.com/kube-queue/kube-queue.svg?token=CNioeKg6kJ72Zcc3ZpeQ&branch=main)](https://app.travis-ci.com/kube-queue/kube-queue)
 
 # Kube-queue
-Kube-queue is designed to manage AI/ML workloads in a Kubernetes native manner. It allows system admins to customize policy for each queue in the form of plugins so both flexibility and fairness are guaranteed between different queues. Combined with a quota system (like resource quota), resource allocation is automated and optimized to maximize utilization of cluster resources.
+kube-queue is designed to manage AI/ML and batch workloads in Kubernetes. It allows system admins to customize job queue management for queues to provide flexibility and fairness between different queues. Combined with a quota system (similar to Kubernetes resource quota), kube-queue automates and optimizes workload and resource quota mangement to maximize cluster resource utilization.
 
 ### Architecture
-![arch](./doc/img/Architecture.png)
+![arch](./doc/img/architecture-updated.jpg)
 
 ### Key features
-- Queue based on priority and creation time
+- Job queue based on workload priority and creation time and quota
 - Support dynamic adjustment of job priority in queue
-- Dequeue based on ResourceQuota
+- Provide faireness between queues
 
 
 ### Install
@@ -19,12 +19,12 @@ Kube-queue is designed to manage AI/ML workloads in a Kubernetes native manner. 
 $ git clone https://github.com/kube-queue/kube-queue.git
 ```
 
-2. Change to Kube-queue directory:
+2. Change to kube-queue directory:
 ```shell
 $ cd kube-queue
 ```
 
-3. Deploy Kube-queue with Helm
+3. Deploy kube-queue with Helm
 ```shell
 $ helm install kube-queue -n kube-system ./charts/v0.0.1
 NAME: kube-queue
@@ -35,7 +35,7 @@ REVISION: 1
 TEST SUITE: None
 ```
 
-4. Check running status of Kube-queue
+4. Check running status of kube-queue
 ```shell
 $ helm get manifest kube-queue  -n kube-system | kubectl get -n kube-queue -f -
 NAME                   STATUS   AGE
@@ -59,14 +59,14 @@ deployment.apps/tf-operator-extension       1/1     1            1           2m1
 deployment.apps/pytorch-operator-extesion   1/1     1            1           2m17s
 ```
 
-5. Uninstall Kube-queue with Helm
+5. Uninstall kube-queue with Helm
 ```shell
 $ helm uninstall kube-queue -n kube-system
 ```
 
 ### Example
 
-We will submit two tf jobs to the cluster at the same time, but the current cluster can only meet the resource requests of one job. At this time, it is ensured that one job is running and the other job is queued by Kube-queue, and the pods of the queued job are not created.
+We will submit two tensorflow (tf) jobs to the cluster at the same time, but the current cluster can only meet the resource requests of one job so one job is running and the other job is queued by kube-queue, and the pods of the queued job are not created.
 
 #### 1. Deploy tf-operator that can support queue ( Ensure that no other tf-operator is deployed in the cluster)
 ```shell
@@ -130,7 +130,7 @@ job1-ps-0       1/1     Running   0          8s
 job1-worker-0   1/1     Running   0          8s
 job1-worker-1   1/1     Running   0          8s
 ```
-5.2 When the state of job1 is Succeeded. Job2 will continue to run.
+5.2 When the state of job1 is `Succeeded`. Job2 will continue to run.
 ```shell
 $ kubectl get tfjob
 NAME   STATE       AGE
@@ -146,7 +146,7 @@ job2-worker-0   1/1     Running     0          22s
 job2-worker-1   1/1     Running     0          21s
 ```
 
-5.3 Finally, the state of the two jobs are Succeeded.
+5.3 Finally, the state of the two jobs are `Succeeded`.
 ```shell
 $ kubectl get tfjob
 NAME   STATE       AGE
