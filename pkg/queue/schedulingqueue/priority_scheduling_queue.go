@@ -67,7 +67,7 @@ func NewPrioritySchedulingQueue(fw framework.Framework, name string, pluginName 
 		pluginName:                pluginName,
 		items:                     heap.New(unitInfoKeyFunc, comp),
 		podInitialBackoffDuration: 1 * time.Second,
-		podMaxBackoffDuration:     4 * time.Second,
+		podMaxBackoffDuration:     20 * time.Second,
 		clock:                     util.RealClock{},
 	}
 
