@@ -2,22 +2,20 @@
 
 ## Architecture
 
-Kube-Queue is designed with compliance of micro-service, making extensibility as the priority.
+Kube-Queue is designed with compliance of micro-service, making extensibility as one its priorities.
 
-We divide the overall system into 3 parts:
+The overall system can be separated into 3 parts:
 
 1. Queue Controller
-2. Permission Counter
+2. Queue Scheduler
 3. Extension Servers
 
-The **Queue Controller** manages one or multiple queue(s) with `QueueUnit` corresponding to all jobs monitored. The major functionality of the Queue Controller is to decide which job should be processed.
+Since the `QueueUnits` are stored as CRs ([Custom Resources](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/)), the **Queue Controller** listens to the APIServer and manages multiple queues regarding QueueUnit-related events.
 
-When the Queue Controller processes a job, the `syncHandler` function calls the `RequestPermission` API from a **Permission Counter** instance and receive a True/False return. (*We shall provide a default Permission Counter implementation, which simply grants permission when resource remained (toto_quota - reserved) is enough for the job described in the request message.*)
+The **Queue Scheduler** watches these queues and decides which job, represented by a QueueUnit, should be released. The processing of QueueUnits insides the Queue Scheduler consists of one or more plugins registered in `pkg/framework/plugins/registry.go`. By default, the resource quota plugin is used to determine whether sufficient resource left. Developers can replace it with customized script.
 
-*The Permission Counter resides within the Queue Controller in case of communication overhead.*
+The real job CRs like TFJob, MPIJob are monitotred and will be updated by corresponding **Extension Server**s. When a new job is created, the **Extension Server** will post a `QueueUnit` in APIServer and update the job when the `QueueUnit` is dequeued.
 
-To watch events of various jobs, such like TF-Job, MPI-Job, we setup an **Extension Server** for each kind of job. The informer within the Extension Server sends `AddKey`, `UpdateKey` and `DeleteKey` requests to Queue Controller, adding `QueueUnit` to queues. When the Queue Controller decides to release a job, it sends the `Release` request to the Extension Server, which will update the corresponding CR via its own client.
+*To support Kube-queue in operators, subtle modifications will be introduced.*
 
-![arch](./img/qc.png)
-
-*The GRPC communication is not restricted to TCP protocol. When all parts are capsuled into one Pod, we can take the advantage of Unix protocol to avoid network latency.*
+![arch](./img/architecture-updated.jpg)
