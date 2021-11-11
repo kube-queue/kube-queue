@@ -29,6 +29,10 @@ type ServerOption struct {
 	// Maximum burst for throttle.
 	// If it's zero, the created RESTClient will use DefaultBurst: 10.
 	Burst int
+	// Pod in the backoffQ init duration
+	PodInitialBackoffSeconds int
+	// Pod in the backoffQ max duration
+	PodMaxBackoffSeconds int
 }
 
 func NewServerOption() *ServerOption {
@@ -39,5 +43,7 @@ func NewServerOption() *ServerOption {
 func (s *ServerOption) AddFlags(fs *flag.FlagSet) {
 	fs.StringVar(&s.KubeConfig, "kubeconfig", "", "the path to the kube config")
 	fs.IntVar(&s.QPS, "qps", 5, "QPS indicates the maximum QPS to the master from this client.")
-	fs.IntVar(&s.Burst, "brust", 10, "Maximum burst for throttle.")
+	fs.IntVar(&s.Burst, "burst", 10, "Maximum burst for throttle.")
+	fs.IntVar(&s.PodInitialBackoffSeconds, "podInitialBackoffSeconds", 1, "Pod in the backoffQ init duration")
+	fs.IntVar(&s.PodMaxBackoffSeconds, "podMaxBackoffSeconds", 20, "Pod in the backoffQ max duration")
 }

@@ -51,7 +51,7 @@ type PrioritySchedulingQueue struct {
 	closed                bool
 }
 
-func NewPrioritySchedulingQueue(fw framework.Framework, name string, pluginName string) queue.SchedulingQueue {
+func NewPrioritySchedulingQueue(fw framework.Framework, name string, pluginName string, podInitialBackoffSeconds int, podMaxBackoffSeconds int) queue.SchedulingQueue {
 	queueSortFuncMap := fw.QueueSortFuncMap()
 	lessFn := queueSortFuncMap[pluginName]
 
@@ -66,8 +66,8 @@ func NewPrioritySchedulingQueue(fw framework.Framework, name string, pluginName 
 		name:                      name,
 		pluginName:                pluginName,
 		items:                     heap.New(unitInfoKeyFunc, comp),
-		podInitialBackoffDuration: 1 * time.Second,
-		podMaxBackoffDuration:     20 * time.Second,
+		podInitialBackoffDuration: time.Duration(podInitialBackoffSeconds) * time.Second,
+		podMaxBackoffDuration:     time.Duration(podMaxBackoffSeconds) * time.Second,
 		clock:                     util.RealClock{},
 	}
 

@@ -55,7 +55,9 @@ func NewController(
 	informersFactory informers.SharedInformerFactory,
 	queueUnitClient *versioned.Clientset,
 	queueInformer cache.SharedIndexInformer,
-	stopCh <-chan struct{}) (*Controller, error) {
+	stopCh <-chan struct{},
+	podInitialBackoffSeconds int,
+	podMaxBackoffSeconds int) (*Controller, error) {
 
 	// Create event broadcaster
 	eventBroadcaster := record.NewBroadcaster()
@@ -71,7 +73,7 @@ func NewController(
 		klog.Fatalf("new framework failed %v", err)
 	}
 
-	multiSchedulingQueue, err := multischedulingqueue.NewMultiSchedulingQueue(fw)
+	multiSchedulingQueue, err := multischedulingqueue.NewMultiSchedulingQueue(fw, podInitialBackoffSeconds, podMaxBackoffSeconds)
 	if err != nil {
 		klog.Fatalf("init multi scheduling queue failed %s", err)
 	}
