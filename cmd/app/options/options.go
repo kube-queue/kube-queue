@@ -23,6 +23,12 @@ import (
 // ServerOption is the main context object for the queue controller.
 type ServerOption struct {
 	KubeConfig string
+	// QPS indicates the maximum QPS to the master from this client.
+	// If it's zero, the created RESTClient will use DefaultQPS: 5
+	QPS int
+	// Maximum burst for throttle.
+	// If it's zero, the created RESTClient will use DefaultBurst: 10.
+	Burst int
 }
 
 func NewServerOption() *ServerOption {
@@ -32,4 +38,6 @@ func NewServerOption() *ServerOption {
 
 func (s *ServerOption) AddFlags(fs *flag.FlagSet) {
 	fs.StringVar(&s.KubeConfig, "kubeconfig", "", "the path to the kube config")
+	fs.IntVar(&s.QPS, "qps", 5, "QPS indicates the maximum QPS to the master from this client.")
+	fs.IntVar(&s.Burst, "brust", 10, "Maximum burst for throttle.")
 }
