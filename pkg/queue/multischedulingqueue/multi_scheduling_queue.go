@@ -38,19 +38,23 @@ type MultiSchedulingQueue struct {
 	fw       framework.Framework
 	queueMap map[string]queue.SchedulingQueue
 	lessFunc framework.MultiQueueLessFunc
+	podInitialBackoffSeconds int
+	podMaxBackoffSeconds int
 }
 
-func NewMultiSchedulingQueue(fw framework.Framework) (queue.MultiSchedulingQueue, error) {
+func NewMultiSchedulingQueue(fw framework.Framework, podInitialBackoffSeconds int, podMaxBackoffSeconds int) (queue.MultiSchedulingQueue, error) {
 
 	mq := &MultiSchedulingQueue{
 		fw:       fw,
 		queueMap: make(map[string]queue.SchedulingQueue),
 		lessFunc: fw.MultiQueueSortFunc(),
+		podInitialBackoffSeconds: podInitialBackoffSeconds,
+		podMaxBackoffSeconds: podMaxBackoffSeconds,
 	}
 
 	// TODO support mutil queue
 	// 当前只是创建default
-	defaultQueue := schedulingqueue.NewPrioritySchedulingQueue(fw, utils.Default, priority.Name)
+	defaultQueue := schedulingqueue.NewPrioritySchedulingQueue(fw, utils.Default, priority.Name, podInitialBackoffSeconds, podMaxBackoffSeconds)
 	mq.queueMap[utils.Default] = defaultQueue
 
 	return mq, nil
@@ -69,7 +73,7 @@ func (mq *MultiSchedulingQueue) Close() {
 }
 
 func (mq *MultiSchedulingQueue) Add(q *v1alpha1.Queue) error {
-	pq := schedulingqueue.NewPrioritySchedulingQueue(mq.fw, q.Name, "priority")
+	pq := schedulingqueue.NewPrioritySchedulingQueue(mq.fw, q.Name, "priority", mq.podInitialBackoffSeconds, mq.podMaxBackoffSeconds)
 	mq.queueMap[pq.Name()] = pq
 	return nil
 }
@@ -80,7 +84,7 @@ func (mq *MultiSchedulingQueue) Delete(q *v1alpha1.Queue) error {
 }
 
 func (mq *MultiSchedulingQueue) Update(old *v1alpha1.Queue, new *v1alpha1.Queue) error {
-	pq := schedulingqueue.NewPrioritySchedulingQueue(mq.fw, new.Name, "priority")
+	pq := schedulingqueue.NewPrioritySchedulingQueue(mq.fw, new.Name, "priority", mq.podInitialBackoffSeconds, mq.podMaxBackoffSeconds)
 	mq.queueMap[pq.Name()] = pq
 	return nil
 }

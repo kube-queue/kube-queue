@@ -2,7 +2,7 @@
 [![Build Status](https://app.travis-ci.com/kube-queue/kube-queue.svg?token=CNioeKg6kJ72Zcc3ZpeQ&branch=main)](https://app.travis-ci.com/kube-queue/kube-queue)
 
 # Kube-queue
-kube-queue is designed to manage AI/ML and batch workloads in Kubernetes. It allows system admins to customize job queue management for queues to provide flexibility and fairness between different queues. Combined with a quota system (similar to Kubernetes resource quota), kube-queue automates and optimizes workload and resource quota mangement to maximize cluster resource utilization.
+kube-queue is designed to manage AI/ML and batch workloads in Kubernetes. It allows system admins to customize job queue management for queues to provide flexibility and fairness between different queues. Combined with a quota system (similar to Kubernetes resource quota), kube-queue automates and optimizes workload and resource quota management to maximize cluster resource utilization.
 
 ### Architecture
 ![arch](./doc/img/architecture-updated.jpg)
