@@ -48,6 +48,8 @@ func Run(opt *options.ServerOption) error {
 		klog.Fatalf("Error building kubeconfig: %s\n", err.Error())
 	}
 
+	cfg.QPS = float32(opt.QPS)
+	cfg.Burst = opt.Burst
 	kubeClient, err := kubernetes.NewForConfig(cfg)
 	if err != nil {
 		klog.Fatalf("Error building kubernetes clientset: %s\n", err.Error())
@@ -58,7 +60,8 @@ func Run(opt *options.ServerOption) error {
 	if err != nil {
 		return err
 	}
-
+	restConfig.QPS = float32(opt.QPS)
+	restConfig.Burst = opt.Burst
 	queueUnitClient, err := versioned.NewForConfig(restConfig)
 	if err != nil {
 		return err
