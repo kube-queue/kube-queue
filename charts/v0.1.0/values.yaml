@@ -1,0 +1,46 @@
+# Default values for kube-queue.
+
+# values for kube-queue installation
+installation:
+  namespace: kube-queue
+  roleListGroups:
+    - '*'
+
+controller:
+  image:
+    repository: registry.cn-hangzhou.aliyuncs.com/kube-queue/kube-queue
+    tag: v0.1.0-3dba71e4
+  # resources of kube-queue-controller container
+  resources:
+    limits:
+      cpu: 200m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+
+extension:
+  tf:
+    image:
+      repository: registry.cn-hangzhou.aliyuncs.com/kube-queue/tf-operator-extension
+      tag: latest
+    # resources of tf-operator-extension container
+    resources:
+      limits:
+        cpu: 200m
+        memory: 512Mi
+      requests:
+        cpu: 100m
+        memory: 256Mi
+  pytorch:
+    image:
+      repository: registry.cn-hangzhou.aliyuncs.com/kube-queue/pytorch-operator-extension
+      tag: latest
+    # resources of pytorch-operator-extension container
+    resources:
+      limits:
+        cpu: 200m
+        memory: 512Mi
+      requests:
+        cpu: 100m
+        memory: 256Mi
