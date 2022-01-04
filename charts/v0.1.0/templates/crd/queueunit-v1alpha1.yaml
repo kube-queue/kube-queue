@@ -1,0 +1,59 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: queueunits.scheduling.x-k8s.io
+  annotations:
+    "api-approved.kubernetes.io": "https://github.com/kube-queue/api/pull/1"
+spec:
+  group: scheduling.x-k8s.io
+  names:
+    kind: QueueUnit
+    plural: queueunits
+    singular: queueunit
+    shortNames:
+      - qu
+      - qus
+  scope: Namespaced
+  versions:
+    - name: "v1alpha1"
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                consumerRef:
+                  type: object
+                  properties:
+                    apiVersion:
+                      type: string
+                    kind:
+                      type: string
+                    name:
+                      type: string
+                    namespace:
+                      type: string
+                priority:
+                  type: integer
+                queue:
+                  type: string
+                priorityClassName:
+                  type: string
+                resource:
+                  type: object
+                  additionalProperties:
+                    anyOf:
+                      - type: integer
+                      - type: string
+                    pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                    x-kubernetes-int-or-string: true
+            status:
+              type: object
+              properties:
+                phase:
+                  type: string
+                message:
+                  type: string
