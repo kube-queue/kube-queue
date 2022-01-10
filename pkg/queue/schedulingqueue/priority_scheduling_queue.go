@@ -49,9 +49,10 @@ type PrioritySchedulingQueue struct {
 	podMaxBackoffDuration time.Duration
 	stop                  chan struct{}
 	closed                bool
+	run                   bool
 }
 
-func NewPrioritySchedulingQueue(fw framework.Framework, name string, pluginName string, podInitialBackoffSeconds int, podMaxBackoffSeconds int) queue.SchedulingQueue {
+func NewPrioritySchedulingQueue(fw framework.Framework, name string, pluginName string, podInitialBackoffSeconds int, podMaxBackoffSeconds int, queue *v1alpha1.Queue) queue.SchedulingQueue {
 	queueSortFuncMap := fw.QueueSortFuncMap()
 	lessFn := queueSortFuncMap[pluginName]
 
@@ -69,6 +70,7 @@ func NewPrioritySchedulingQueue(fw framework.Framework, name string, pluginName 
 		podInitialBackoffDuration: time.Duration(podInitialBackoffSeconds) * time.Second,
 		podMaxBackoffDuration:     time.Duration(podMaxBackoffSeconds) * time.Second,
 		clock:                     util.RealClock{},
+		queue:                     framework.NewQueueInfo(queue),
 	}
 
 	q.backoffQ = heap.NewWithRecorder(unitInfoKeyFunc, q.podsCompareBackoffCompleted)
@@ -77,6 +79,14 @@ func NewPrioritySchedulingQueue(fw framework.Framework, name string, pluginName 
 
 func (p *PrioritySchedulingQueue) Run() {
 	go wait.Until(p.flushBackoffQCompleted, 1.0*time.Second, p.stop)
+}
+
+func (p *PrioritySchedulingQueue) GetRunStatus() bool {
+	return p.run
+}
+
+func (p *PrioritySchedulingQueue) SetRunStatus(b bool) {
+	p.run = b
 }
 
 func (p *PrioritySchedulingQueue) Close() {

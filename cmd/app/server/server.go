@@ -69,10 +69,11 @@ func Run(opt *options.ServerOption) error {
 
 	queueUnitInformerFactory := externalversions.NewSharedInformerFactory(queueUnitClient, 0)
 	queueUnitInformer := queueUnitInformerFactory.Scheduling().V1alpha1().QueueUnits().Informer()
+	queueInformer := queueUnitInformerFactory.Scheduling().V1alpha1().Queues().Informer()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	controller, err := controller.NewController(kubeClient, opt.KubeConfig, kubeInformerFactory, queueUnitClient, queueUnitInformer, ctx.Done(), opt.PodInitialBackoffSeconds, opt.PodMaxBackoffSeconds)
+	controller, err := controller.NewController(kubeClient, opt.KubeConfig, kubeInformerFactory, queueUnitClient, queueUnitInformer, queueInformer, ctx.Done(), opt.PodInitialBackoffSeconds, opt.PodMaxBackoffSeconds)
 	if err != nil {
 		klog.Fatalln("Error building controller\n")
 	}

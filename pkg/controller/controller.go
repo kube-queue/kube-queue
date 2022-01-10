@@ -47,6 +47,7 @@ type Controller struct {
 	scheduler            *scheduler.Scheduler
 	queueUnitInformer    cache.SharedIndexInformer
 	queueUnitClient      *versioned.Clientset
+	queueInformer        cache.SharedIndexInformer
 }
 
 func NewController(
@@ -54,6 +55,7 @@ func NewController(
 	kubeConfigPath string,
 	informersFactory informers.SharedInformerFactory,
 	queueUnitClient *versioned.Clientset,
+	queueUnitInformer cache.SharedIndexInformer,
 	queueInformer cache.SharedIndexInformer,
 	stopCh <-chan struct{},
 	podInitialBackoffSeconds int,
@@ -83,9 +85,11 @@ func NewController(
 		fw:                   fw,
 		multiSchedulingQueue: multiSchedulingQueue,
 		queueUnitClient:      queueUnitClient,
-		queueUnitInformer:    queueInformer,
+		queueUnitInformer:    queueUnitInformer,
+		queueInformer:        queueInformer,
 	}
-	controller.addAllEventHandlers(queueInformer)
+	controller.addAllEventHandlers(queueUnitInformer, queueInformer)
+	go controller.queueInformer.Run(stopCh)
 	go controller.queueUnitInformer.Run(stopCh)
 
 	controller.scheduler, err = scheduler.NewScheduler(multiSchedulingQueue, fw, queueUnitClient)
@@ -97,7 +101,7 @@ func NewController(
 }
 
 func (c *Controller) Start(ctx context.Context) {
-	c.multiSchedulingQueue.Run()
+	// c.multiSchedulingQueue.Run()
 	c.scheduler.Start(ctx)
 	c.multiSchedulingQueue.Close()
 }

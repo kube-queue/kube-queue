@@ -36,8 +36,13 @@ func (p *Priority) Name() string {
 }
 
 func (p *Priority) MultiQueueLess(q1 *framework.QueueInfo, q2 *framework.QueueInfo) bool {
-	p1 := q1.Priority
-	p2 := q2.Priority
+	var p1, p2 int32 = 0, 0
+	if q1.Queue.Spec.Priority != nil {
+		p1 = *(q1.Queue.Spec.Priority)
+	}
+	if q2.Queue.Spec.Priority != nil {
+		p2 = *(q2.Queue.Spec.Priority)
+	}
 	return p1 > p2
 }
 
