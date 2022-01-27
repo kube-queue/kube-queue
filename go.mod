@@ -3,7 +3,7 @@ module github.com/kube-queue/kube-queue
 go 1.14
 
 require (
-	github.com/kube-queue/api v0.0.0-20210623033849-bffe1acb5aa9
+	github.com/kube-queue/api v0.0.0-20220112140309-2f9d9676d6de
 	gopkg.in/yaml.v2 v2.3.0 // indirect
 	k8s.io/api v0.18.19
 	k8s.io/apimachinery v0.18.19

@@ -24,9 +24,9 @@ import (
 
 // QueueInfo is a Queue wrapper with additional information related to the Queue
 type QueueInfo struct {
-	Name     string
-	Priority int32
-	Queue    *v1alpha1.Queue
+	// Name is namespace
+	Name string
+	Queue *v1alpha1.Queue
 }
 
 // QueueUnitInfo is a Queue wrapper with additional information related to
@@ -51,5 +51,13 @@ func NewQueueUnitInfo(unit *v1alpha1.QueueUnit) *QueueUnitInfo {
 		Timestamp:               time.Now(),
 		Attempts:                0,
 		InitialAttemptTimestamp: time.Now(),
+	}
+}
+
+// NewQueueInfo constructs QueueInfo
+func NewQueueInfo(queue *v1alpha1.Queue) *QueueInfo {
+	return &QueueInfo{
+		Name: queue.Namespace,
+		Queue: queue,
 	}
 }

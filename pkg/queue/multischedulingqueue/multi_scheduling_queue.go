@@ -20,10 +20,6 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/kube-queue/kube-queue/pkg/utils"
-
-	"github.com/kube-queue/kube-queue/pkg/framework/plugins/priority"
-
 	"github.com/kube-queue/api/pkg/apis/scheduling/v1alpha1"
 	"github.com/kube-queue/kube-queue/pkg/framework"
 	"github.com/kube-queue/kube-queue/pkg/queue"
@@ -52,52 +48,71 @@ func NewMultiSchedulingQueue(fw framework.Framework, podInitialBackoffSeconds in
 		podMaxBackoffSeconds: podMaxBackoffSeconds,
 	}
 
-	// TODO support mutil queue
-	// 当前只是创建default
-	defaultQueue := schedulingqueue.NewPrioritySchedulingQueue(fw, utils.Default, priority.Name, podInitialBackoffSeconds, podMaxBackoffSeconds)
-	mq.queueMap[utils.Default] = defaultQueue
-
 	return mq, nil
 }
 
 func (mq *MultiSchedulingQueue) Run() {
 	for _, q := range mq.queueMap {
-		q.Run()
+		if !q.GetRunStatus(){
+			q.Run()
+			q.SetRunStatus(true)
+		}
 	}
 }
 
 func (mq *MultiSchedulingQueue) Close() {
+	mq.Lock()
+	defer mq.Unlock()
+
 	for _, q := range mq.queueMap {
 		q.Close()
 	}
 }
 
 func (mq *MultiSchedulingQueue) Add(q *v1alpha1.Queue) error {
-	pq := schedulingqueue.NewPrioritySchedulingQueue(mq.fw, q.Name, "priority", mq.podInitialBackoffSeconds, mq.podMaxBackoffSeconds)
+	mq.Lock()
+	defer mq.Unlock()
+
+	// Name is namespace for the moment
+	name := q.Namespace
+	pq := schedulingqueue.NewPrioritySchedulingQueue(mq.fw, name, string(q.Spec.QueuePolicy), mq.podInitialBackoffSeconds, mq.podMaxBackoffSeconds, q)
 	mq.queueMap[pq.Name()] = pq
+
+	mq.Run()
 	return nil
 }
 
 func (mq *MultiSchedulingQueue) Delete(q *v1alpha1.Queue) error {
-	delete(mq.queueMap, q.Name)
+	mq.Lock()
+	defer mq.Unlock()
+
+	name := q.Namespace
+	delete(mq.queueMap, name)
 	return nil
 }
 
 func (mq *MultiSchedulingQueue) Update(old *v1alpha1.Queue, new *v1alpha1.Queue) error {
-	pq := schedulingqueue.NewPrioritySchedulingQueue(mq.fw, new.Name, "priority", mq.podInitialBackoffSeconds, mq.podMaxBackoffSeconds)
+	mq.Lock()
+	defer mq.Unlock()
+
+	name := new.Namespace
+	pq := schedulingqueue.NewPrioritySchedulingQueue(mq.fw, name, string(new.Spec.QueuePolicy), mq.podInitialBackoffSeconds, mq.podMaxBackoffSeconds, new)
 	mq.queueMap[pq.Name()] = pq
 	return nil
 }
 
 func (mq *MultiSchedulingQueue) GetQueueByName(name string) (queue.SchedulingQueue, bool) {
-	if name == "" {
-		return mq.queueMap["default"], true
-	}
+	mq.RLock()
+	defer mq.RUnlock()
+
 	q, ok := mq.queueMap[name]
 	return q, ok
 }
 
 func (mq *MultiSchedulingQueue) SortedQueue() []queue.SchedulingQueue {
+	mq.RLock()
+	defer mq.RUnlock()
+
 	len := len(mq.queueMap)
 	unSortedQueue := make([]queue.SchedulingQueue, len)
 

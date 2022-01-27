@@ -47,5 +47,7 @@ type SchedulingQueue interface {
 	QueueInfo() *framework.QueueInfo
 	Length() int
 	Run()
+	GetRunStatus() bool
+	SetRunStatus(bool)
 	Close()
 }

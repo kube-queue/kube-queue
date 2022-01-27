@@ -26,8 +26,8 @@ import (
 	"github.com/kube-queue/kube-queue/pkg/framework"
 )
 
-func (c *Controller) addAllEventHandlers(queueInformer cache.SharedIndexInformer) {
-	queueInformer.AddEventHandler(
+func (c *Controller) addAllEventHandlers(queueUnitInformer cache.SharedIndexInformer, queueInformer cache.SharedIndexInformer) {
+	queueUnitInformer.AddEventHandler(
 		cache.FilteringResourceEventHandler{
 			FilterFunc: func(obj interface{}) bool {
 				switch qu := obj.(type) {
@@ -48,7 +48,7 @@ func (c *Controller) addAllEventHandlers(queueInformer cache.SharedIndexInformer
 		},
 	)
 
-	queueInformer.AddEventHandler(
+	queueUnitInformer.AddEventHandler(
 		cache.FilteringResourceEventHandler{
 			FilterFunc: func(obj interface{}) bool {
 				switch qu := obj.(type) {
@@ -67,11 +67,61 @@ func (c *Controller) addAllEventHandlers(queueInformer cache.SharedIndexInformer
 			},
 		},
 	)
+
+	queueInformer.AddEventHandler(
+		cache.FilteringResourceEventHandler{
+			FilterFunc: func(obj interface{}) bool {
+				switch obj.(type) {
+				case *v1alpha1.Queue:
+					return true
+				default:
+					return false
+				}
+			},
+			Handler: cache.ResourceEventHandlerFuncs{
+				AddFunc:    c.AddQueue,
+				UpdateFunc: c.UpdateQueue,
+				DeleteFunc: c.DeleteQueue,
+			},
+		},
+	)
+}
+
+func (c *Controller) AddQueue(obj interface{}) {
+	queue := obj.(*v1alpha1.Queue)
+	queueName := queue.Namespace
+	_, ok := c.multiSchedulingQueue.GetQueueByName(queueName)
+	if ok {
+		klog.Errorf("queue is exist %s", queueName)
+		return
+	}
+	err := c.multiSchedulingQueue.Add(queue)
+	if err != nil {
+		klog.Errorf("add queue err %v", err)
+	}
+}
+
+func (c *Controller) UpdateQueue(oldObj, newObj interface{}) {
+	oldQ := oldObj.(*v1alpha1.Queue)
+	newQ := newObj.(*v1alpha1.Queue)
+	err := c.multiSchedulingQueue.Update(oldQ, newQ)
+	if err != nil {
+		klog.Errorf("queue %s update fail %v", oldQ.Namespace, err.Error())
+	}
+}
+
+func (c *Controller) DeleteQueue(obj interface{}) {
+	queue := obj.(*v1alpha1.Queue)
+	err := c.multiSchedulingQueue.Delete(queue)
+	if err != nil {
+		klog.Errorf("queue %s delete fail %v", queue.Namespace, err.Error())
+	}
 }
 
 func (c *Controller) AddQueueUnit(obj interface{}) {
 	unit := obj.(*v1alpha1.QueueUnit)
-	queueName := unit.Spec.Queue
+	// Namespace is key of queueMap
+	queueName := unit.Spec.ConsumerRef.Namespace
 	q, ok := c.multiSchedulingQueue.GetQueueByName(queueName)
 	if !ok {
 		klog.Errorf("queue is not exist %s", queueName)
@@ -92,7 +142,8 @@ func (c *Controller) AddDequeuedQueueUnit(obj interface{}) {
 
 func (c *Controller) DeleteQueueUnit(obj interface{}) {
 	unit := obj.(*v1alpha1.QueueUnit)
-	queueName := unit.Spec.Queue
+	// Namespace is key of queueMap
+	queueName := unit.Spec.ConsumerRef.Namespace
 	q, ok := c.multiSchedulingQueue.GetQueueByName(queueName)
 	if !ok {
 		klog.Errorf("queue is not exist %s", queueName)
@@ -114,7 +165,8 @@ func (c *Controller) DeleteDequeuedQueueUnit(obj interface{}) {
 func (c *Controller) UpdateQueueUnit(oldObj, newObj interface{}) {
 	oldQu := oldObj.(*v1alpha1.QueueUnit)
 	newQu := newObj.(*v1alpha1.QueueUnit)
-	queueName := newQu.Spec.Queue
+	// Namespace is key of queueMap
+	queueName := newQu.Spec.ConsumerRef.Namespace
 	q, ok := c.multiSchedulingQueue.GetQueueByName(queueName)
 	if !ok {
 		klog.Errorf("queue is not exist %s", queueName)

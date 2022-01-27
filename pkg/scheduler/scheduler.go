@@ -88,7 +88,6 @@ func (s *Scheduler) schedule(ctx context.Context) {
 				s.ErrorFunc(ctx, unitInfo, q)
 				klog.Info("---schedule end %v ---", unitInfo.Name)
 			}
-			return
 		}
 	}
 }
