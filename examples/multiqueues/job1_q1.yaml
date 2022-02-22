@@ -1,0 +1,52 @@
+apiVersion: "kubeflow.org/v1"
+kind: "TFJob"
+metadata:
+  name: "job1_q1"
+  namespace: "queue1"
+  annotations:
+    scheduling.x-k8s.io/suspend: "true"
+spec:
+  tfReplicaSpecs:
+    PS:
+      replicas: 1
+      restartPolicy: Never
+      template:
+        spec:
+          containers:
+            - name: tensorflow
+              image: busybox:stable
+              command:
+                - /bin/sh
+                - -c
+                - --
+              args:
+                - "sleep 30s"
+              resources:
+                requests:
+                  cpu: 1
+                  memory: 1Gi
+                limits:
+                  cpu: 1
+                  memory: 1Gi
+
+    Worker:
+      replicas: 2
+      restartPolicy: Never
+      template:
+        spec:
+          containers:
+            - name: tensorflow
+              image: busybox:stable
+              command:
+                - /bin/sh
+                - -c
+                - --
+              args:
+                - "sleep 30s"
+              resources:
+                requests:
+                  cpu: 1
+                  memory: 1Gi
+                limits:
+                  cpu: 1
+                  memory: 1Gi
