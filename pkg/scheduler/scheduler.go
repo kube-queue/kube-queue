@@ -73,6 +73,11 @@ func (s *Scheduler) schedule(ctx context.Context) {
 				klog.Infof("dequeue %v", unitInfo.Name)
 				status = s.fw.RunReservePluginsReserve(schedulingCycleCtx, unitInfo)
 				klog.Info("reserve status %v %v", status.Code(), status.Message())
+				if status.Code() != framework.Success {
+					s.ErrorFunc(ctx, unitInfo, q)
+					klog.Info("---schedule end %v ---", unitInfo.Name)
+					continue
+				}
 				go func() {
 					err := s.Dequeue(unitInfo.Unit)
 					if err != nil {
@@ -80,6 +85,7 @@ func (s *Scheduler) schedule(ctx context.Context) {
 						// 构建一个临时存储的位置
 						s.fw.RunReservePluginsUnreserve(schedulingCycleCtx, unitInfo)
 						s.ErrorFunc(ctx, unitInfo, q)
+						return
 					}
 					klog.Info("dequeue %v success", unitInfo.Name)
 					klog.Info("---schedule end %v ---", unitInfo.Name)
